@@ -1,4 +1,5 @@
 # Holy Script
+<img width="500" height="500" alt="Emblema da linguagem Holy Script" src="https://github.com/user-attachments/assets/c6a7e8f8-0add-4c8b-bd4b-2d47463baa83" />
 
 An interpreted programming language with archaic/biblical English syntax, implemented in Rust.
 
