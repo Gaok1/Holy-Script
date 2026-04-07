@@ -1,0 +1,188 @@
+{
+    "Salm (função)": {
+        "prefix": "salm",
+        "body": [
+            "salm ${1:nome} receiving ${2:param} of ${3|atom,fractional,word,dogma|} reveals ${4|void,atom,fractional,word,dogma|}",
+            "\t${0:reveal ${5:0}}"
+        ],
+        "description": "Define um salm (função)"
+    },
+
+    "Salm sem parâmetros": {
+        "prefix": "salm0",
+        "body": [
+            "salm ${1:nome} reveals ${2|void,atom,fractional,word,dogma|}",
+            "\t${0:reveal ${3:0}}"
+        ],
+        "description": "Define um salm sem parâmetros"
+    },
+
+    "Method Salm": {
+        "prefix": "msalm",
+        "body": [
+            "salm ${1:nome} upon ${2:Scripture} reveals ${3|void,atom,fractional,word,dogma|}",
+            "\t${0:reveal ${4:0}}"
+        ],
+        "description": "Define um method salm bindado a um scripture"
+    },
+
+    "Scripture (struct)": {
+        "prefix": "scripture",
+        "body": [
+            "scripture ${1:Nome}",
+            "\t${2:campo} of ${3|atom,fractional,word,dogma|}$0"
+        ],
+        "description": "Define um scripture (estrutura de dados)"
+    },
+
+    "Sin (exceção)": {
+        "prefix": "sin",
+        "body": [
+            "sin ${1:NomeSin}",
+            "\t${2:message} of ${3|word,atom|}$0"
+        ],
+        "description": "Declara um sin (exceção lançável)"
+    },
+
+    "Sin sem campos": {
+        "prefix": "sin0",
+        "body": [
+            "sin ${1:NomeSin}$0"
+        ],
+        "description": "Declara um sin sem campos"
+    },
+
+    "whether (if)": {
+        "prefix": "whether",
+        "body": [
+            "whether ${1:condicao}",
+            "\t${0:reveal 0}"
+        ],
+        "description": "Condicional whether"
+    },
+
+    "whether / otherwise (if/else)": {
+        "prefix": "whetherwise",
+        "body": [
+            "whether ${1:condicao}",
+            "\t${2:reveal 0}",
+            "otherwise",
+            "\t${0:reveal 1}"
+        ],
+        "description": "Condicional whether / otherwise"
+    },
+
+    "whether / otherwise so / otherwise (if/elif/else)": {
+        "prefix": "whetherelse",
+        "body": [
+            "whether ${1:condicao}",
+            "\t${2:reveal 0}",
+            "otherwise so ${3:outra_condicao}",
+            "\t${4:reveal 1}",
+            "otherwise",
+            "\t${0:reveal 2}"
+        ],
+        "description": "Condicional completo com otherwise so"
+    },
+
+    "litany for (loop)": {
+        "prefix": "litany",
+        "body": [
+            "litany for ${1:condicao}",
+            "\t${0:reveal 0}"
+        ],
+        "description": "Loop litany for (while)"
+    },
+
+    "confess / answer for (try/catch)": {
+        "prefix": "confess",
+        "body": [
+            "confess",
+            "\t${1:hail proclaim praying \"tentativa\"}",
+            "answer for ${2:NomeSin} as ${3:err}",
+            "\t${0:hail proclaim praying \"erro capturado\"}"
+        ],
+        "description": "Bloco confess / answer for"
+    },
+
+    "confess / answer for / absolve (try/catch/finally)": {
+        "prefix": "confessabs",
+        "body": [
+            "confess",
+            "\t${1:hail proclaim praying \"tentativa\"}",
+            "answer for ${2:NomeSin} as ${3:err}",
+            "\t${4:hail proclaim praying \"erro\"}",
+            "absolve",
+            "\t${0:hail proclaim praying \"sempre\"}"
+        ],
+        "description": "Bloco confess / answer for / absolve (finally)"
+    },
+
+    "let there be (declaração sem valor)": {
+        "prefix": "letbe",
+        "body": [
+            "let there be ${1:nome} of ${2|atom,fractional,word,dogma|}$0"
+        ],
+        "description": "Declara variável sem valor inicial"
+    },
+
+    "let there (declaração com valor)": {
+        "prefix": "let",
+        "body": [
+            "let there ${1:nome} of ${2|atom,fractional,word,dogma|} be ${0:0}"
+        ],
+        "description": "Declara variável com valor"
+    },
+
+    "reveal (return)": {
+        "prefix": "reveal",
+        "body": [
+            "reveal ${0:0}"
+        ],
+        "description": "Retorna um valor do salm"
+    },
+
+    "transgress (throw)": {
+        "prefix": "transgress",
+        "body": [
+            "transgress ${1:NomeSin} praying ${0:\"mensagem\"}"
+        ],
+        "description": "Lança um sin"
+    },
+
+    "manifest (instanciar scripture)": {
+        "prefix": "manifest",
+        "body": [
+            "manifest ${1:Scripture} praying ${0:args}"
+        ],
+        "description": "Instancia um scripture"
+    },
+
+    "hail proclaim": {
+        "prefix": "proclaim",
+        "body": [
+            "hail proclaim praying ${0:\"mensagem\"}"
+        ],
+        "description": "Imprime uma mensagem"
+    },
+
+    "become (atribuição)": {
+        "prefix": "become",
+        "body": [
+            "${1:variavel} become ${0:0}"
+        ],
+        "description": "Atribui um valor a uma variável"
+    },
+
+    "Programa completo": {
+        "prefix": "holy",
+        "body": [
+            "-- ${1:descrição do programa}",
+            "",
+            "${0}",
+            "",
+            "amen"
+        ],
+        "description": "Estrutura básica de um programa holy"
+    }
+}

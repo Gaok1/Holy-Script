@@ -1,0 +1,186 @@
+-- ============================================================
+--  Holy Language — EBNF Grammar
+-- ============================================================
+
+-- PROGRAMA
+program     ::= testament* top_decl* statement* "amen"
+
+top_decl    ::= salm
+            |   method_salm
+            |   scripture
+            |   sin_decl
+            |   covenant
+
+
+-- TESTAMENTOS (módulos)
+-- sem "revealing": importa tudo
+-- com "revealing": importa símbolos específicos (scriptures, salmos, etc.)
+testament   ::= "testament" ident ("revealing" reveal_list)?
+
+reveal_list ::= ident ("," ident)*
+
+
+-- SCRIPTURES (definição de estrutura — dado puro, sem comportamento)
+scripture   ::= "scripture" ident field+
+
+field       ::= ident "of" type
+
+
+-- SINS (estruturas lançáveis e capturáveis)
+-- field* porque um sin sem campos é válido — só o tipo já basta pra captura
+sin_decl    ::= "sin" ident field*
+
+
+-- COVENANTS (tipos soma — variantes simples sem dados)
+covenant    ::= "covenant" ident INDENT variant+ DEDENT
+
+variant     ::= ident
+
+
+-- SALMOS (definição de função comum)
+salm        ::= "salm" ident ("receiving" param_list)? "reveals" type block
+
+-- SALMOS BINDADOS A SCRIPTURES
+-- "upon" sinaliza binding — "its" fica disponível no corpo como referência à instância
+method_salm ::= "salm" ident "upon" ident ("receiving" param_list)? "reveals" type block
+
+param_list  ::= param ("," param)*
+param       ::= ident "of" type
+
+-- bloco delimitado por indentação (INDENT/DEDENT gerados pelo lexer)
+block       ::= INDENT statement+ DEDENT
+
+
+-- STATEMENTS
+statement   ::= decl
+            |   assign
+            |   invocation
+            |   reveal_stmt
+            |   conditional
+            |   loop
+            |   loop_control
+            |   sin_handler
+            |   discern
+            |   transgress
+
+-- declaração sem valor
+decl        ::= "let there be" ident "of" type
+-- declaração com valor
+            |   "let there" ident "of" type "be" expr
+
+-- reatribuição
+assign      ::= ident "become" expr
+
+-- invocação como statement
+-- "praying" agora disponível também em method_salm
+invocation  ::= "hail" ident "upon" ident ("praying" arg_list)?   -- method_salm
+            |   "hail" ident ("praying" arg_list)?                 -- salmo comum
+
+-- retorno
+reveal_stmt ::= "reveal" expr
+
+-- lançamento de sin
+transgress  ::= "transgress" ident ("praying" arg_list)?
+                -- ident é o tipo do sin; args são os campos em ordem
+
+-- controle de loop
+-- "forsake" interrompe o litany (break)
+-- "ascend"  salta para a próxima iteração (continue)
+loop_control ::= "forsake"
+             |   "ascend"
+
+
+-- CONDICIONAL
+conditional ::= "whether" expr block
+               ("otherwise so" expr block)*
+               ("otherwise" block)?
+
+
+-- LOOP
+loop        ::= "litany for" expr block
+
+
+-- SINS (exceções)
+-- cada cláusula "answer for" captura um tipo de sin distinto
+-- "as ident" é opcional — só necessário quando os campos do sin precisam ser acessados
+sin_handler ::= "confess" block
+                ("answer for" ident ("as" ident)? block)+
+                ("absolve" block)?
+
+
+-- DISCERN (pattern matching sobre covenant)
+-- "otherwise" é o caso default — opcional se todas as variantes forem cobertas
+discern     ::= "discern" ident INDENT
+                ("as" ident block)+
+                ("otherwise" block)?
+                DEDENT
+
+
+-- EXPRESSÕES (hierarquia de precedência, do menor para o maior)
+--
+--   cmp_expr  →  arith_expr  →  term  →  unary  →  atom
+--
+--   comparação < adição/subtração < multiplicação/divisão/resto < negação < átomos
+--
+--   sem grouping explícito — usar variáveis intermediárias para reordenar
+
+expr        ::= cmp_expr
+
+cmp_expr    ::= arith_expr (cmp_op arith_expr)?
+                -- comparações não encadeiam: (a > b > c) é inválido
+
+arith_expr  ::= term (("plus" | "minus") term)*
+
+term        ::= unary (("times" | "over" | "remainder") unary)*
+
+-- negação unária — "negate x" equivale a -x
+unary       ::= "negate" atom | atom
+
+atom        ::= "hail" ident "upon" ident ("praying" arg_list)?    -- invocação de method_salm
+            |   "hail" ident ("praying" arg_list)?                 -- invocação de salmo comum
+            |   "manifest" ident ("praying" arg_list)?             -- instanciar scripture
+            |   ident "from" ident                                 -- acesso de campo em variável
+            |   ident "from" "its"                                 -- acesso de campo em method_salm
+            |   literal
+            |   ident
+
+cmp_op      ::= "is"
+            |   "is not"
+            |   "greater than"
+            |   "lesser than"
+            |   "no greater than"
+            |   "no lesser than"
+
+arg_list    ::= expr ("," expr)* ("and" expr)?
+
+-- TIPOS
+type        ::= "atom"        -- int (i64)
+            |   "fractional"  -- float (f64)
+            |   "word"        -- string
+            |   "dogma"       -- bool (blessed | forsaken)
+            |   "void"
+            |   ident         -- scripture ou covenant definido pelo usuário
+
+
+-- LITERAIS
+literal     ::= int_lit
+            |   float_lit
+            |   str_lit
+            |   "blessed"
+            |   "forsaken"
+
+int_lit     ::= [0-9]+
+float_lit   ::= [0-9]+ "." [0-9]+
+str_lit     ::= '"' [^"]* '"'
+ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
+
+
+-- ============================================================
+--  PALAVRAS RESERVADAS
+-- ============================================================
+-- testament  revealing  scripture  sin  covenant  salm  upon  receiving  reveals
+-- let  there  be  of  become  hail  praying  reveal  whether  otherwise  so
+-- litany  for  forsake  ascend  confess  answer  absolve  as  transgress
+-- manifest  from  its  amen  discern  negate  remainder
+-- plus  minus  times  over  is  not  greater  lesser  than  no
+-- blessed  forsaken  and  void  atom  fractional  word  dogma

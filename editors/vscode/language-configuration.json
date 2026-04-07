@@ -1,0 +1,16 @@
+{
+    "comments": {
+        "lineComment": "--"
+    },
+    "autoClosingPairs": [
+        { "open": "\"", "close": "\"", "notIn": ["string", "comment"] }
+    ],
+    "surroundingPairs": [
+        [  "\"", "\"" ]
+    ],
+    "indentationRules": {
+        "increaseIndentPattern": "^\\s*(salm|scripture|sin|whether|otherwise|litany|confess|answer|absolve)\\b.*",
+        "decreaseIndentPattern": "^\\s*(amen)\\b"
+    },
+    "wordPattern": "[a-zA-Z_][a-zA-Z0-9_]*"
+}

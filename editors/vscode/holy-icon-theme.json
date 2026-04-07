@@ -1,0 +1,10 @@
+{
+    "iconDefinitions": {
+        "_holy_file": {
+            "iconPath": "./icons/holy-file.png"
+        }
+    },
+    "fileExtensions": {
+        "holy": "_holy_file"
+    }
+}

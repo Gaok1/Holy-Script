@@ -1,0 +1,68 @@
+-- Exemplo básico: holy-lang
+
+-- Scripture (struct)
+scripture Person
+    name of word
+    age of atom
+
+-- Sin (exceção)
+sin AgeError
+    message of word
+
+-- Salm comum
+salm greet receiving p of Person reveals void
+    hail proclaim praying name from p
+
+-- Salm com lógica
+salm factorial receiving n of atom reveals atom
+    whether n is 0
+        reveal 1
+    let there result of atom be n times hail factorial praying n minus 1
+    reveal result
+
+-- Method salm bindado a Person
+salm describe upon Person reveals void
+    let there msg of word be name from its
+    hail proclaim praying msg
+
+-- Salm que verifica idade
+salm check_age receiving p of Person reveals void
+    whether age from p is 0
+        transgress AgeError praying "Idade inválida"
+    hail proclaim praying "Idade válida"
+
+-- Programa principal
+let there be greeted of dogma
+greeted become forsaken
+
+let there p of Person be manifest Person praying "Gabriel", 25
+
+hail greet praying p
+
+hail describe upon p
+
+let there f of atom be hail factorial praying 5
+hail proclaim praying f
+
+-- Condicional
+whether age from p greater than 18
+    hail proclaim praying "maior de idade"
+otherwise
+    hail proclaim praying "menor de idade"
+
+-- Confess / answer for / absolve
+confess
+    hail check_age praying p
+answer for AgeError as err
+    hail proclaim praying "erro capturado"
+absolve
+    hail proclaim praying "sempre executa"
+
+-- Loop
+let there be i of atom
+i become 1
+litany for i no greater than 3
+    hail proclaim praying i
+    i become i plus 1
+
+amen

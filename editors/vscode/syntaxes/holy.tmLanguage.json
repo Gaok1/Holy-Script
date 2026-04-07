@@ -1,0 +1,198 @@
+{
+    "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+    "name": "Holy",
+    "scopeName": "source.holy",
+    "fileTypes": ["holy"],
+    "patterns": [
+        { "include": "#comment" },
+        { "include": "#string" },
+        { "include": "#salm-method-def" },
+        { "include": "#salm-def" },
+        { "include": "#scripture-def" },
+        { "include": "#sin-def" },
+        { "include": "#hail-call" },
+        { "include": "#manifest-call" },
+        { "include": "#testament-decl" },
+        { "include": "#multiword-cmp" },
+        { "include": "#multiword-decl" },
+        { "include": "#multiword-handler" },
+        { "include": "#number" },
+        { "include": "#boolean" },
+        { "include": "#keyword-control" },
+        { "include": "#keyword-declaration" },
+        { "include": "#storage-type" },
+        { "include": "#keyword-operator" },
+        { "include": "#variable-language" },
+        { "include": "#keyword-other" }
+    ],
+    "repository": {
+
+        "comment": {
+            "name": "comment.line.double-dash.holy",
+            "match": "--.*$"
+        },
+
+        "string": {
+            "name": "string.quoted.double.holy",
+            "begin": "\"",
+            "end": "\""
+        },
+
+        "number": {
+            "name": "constant.numeric.holy",
+            "match": "\\b\\d+(\\.\\d+)?\\b"
+        },
+
+        "boolean": {
+            "name": "constant.language.boolean.holy",
+            "match": "\\b(blessed|forsaken)\\b"
+        },
+
+        "salm-method-def": {
+            "comment": "salm name upon ScriptureType",
+            "match": "\\b(salm)\\s+([a-zA-Z_]\\w*)\\s+(upon)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.function.holy" },
+                "2": { "name": "entity.name.function.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "entity.name.type.holy" }
+            }
+        },
+
+        "salm-def": {
+            "comment": "salm name",
+            "match": "\\b(salm)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.function.holy" },
+                "2": { "name": "entity.name.function.holy" }
+            }
+        },
+
+        "scripture-def": {
+            "match": "\\b(scripture)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.class.holy" },
+                "2": { "name": "entity.name.type.holy" }
+            }
+        },
+
+        "sin-def": {
+            "match": "\\b(sin)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.class.holy" },
+                "2": { "name": "entity.name.type.holy" }
+            }
+        },
+
+        "hail-call": {
+            "match": "\\b(hail)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.other.invocation.holy" },
+                "2": { "name": "entity.name.function.holy" }
+            }
+        },
+
+        "manifest-call": {
+            "match": "\\b(manifest)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.other.invocation.holy" },
+                "2": { "name": "entity.name.type.holy" }
+            }
+        },
+
+        "testament-decl": {
+            "match": "\\b(testament)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.control.import.holy" },
+                "2": { "name": "entity.name.namespace.holy" }
+            }
+        },
+
+        "multiword-cmp": {
+            "comment": "Operadores de comparação multi-palavra — ordem importa",
+            "patterns": [
+                {
+                    "name": "keyword.operator.comparison.holy",
+                    "match": "\\bno\\s+greater\\s+than\\b"
+                },
+                {
+                    "name": "keyword.operator.comparison.holy",
+                    "match": "\\bno\\s+lesser\\s+than\\b"
+                },
+                {
+                    "name": "keyword.operator.comparison.holy",
+                    "match": "\\bgreater\\s+than\\b"
+                },
+                {
+                    "name": "keyword.operator.comparison.holy",
+                    "match": "\\blesser\\s+than\\b"
+                },
+                {
+                    "name": "keyword.operator.comparison.holy",
+                    "match": "\\bis\\s+not\\b"
+                }
+            ]
+        },
+
+        "multiword-decl": {
+            "patterns": [
+                {
+                    "name": "keyword.declaration.holy",
+                    "match": "\\blet\\s+there\\s+be\\b"
+                },
+                {
+                    "name": "keyword.declaration.holy",
+                    "match": "\\blet\\s+there\\b"
+                },
+                {
+                    "name": "keyword.control.holy",
+                    "match": "\\blitany\\s+for\\b"
+                },
+                {
+                    "name": "keyword.control.holy",
+                    "match": "\\botherwise\\s+so\\b"
+                }
+            ]
+        },
+
+        "multiword-handler": {
+            "patterns": [
+                {
+                    "name": "keyword.control.holy",
+                    "match": "\\banswer\\s+for\\b"
+                }
+            ]
+        },
+
+        "keyword-control": {
+            "name": "keyword.control.holy",
+            "match": "\\b(whether|otherwise|confess|absolve|reveal|transgress|amen)\\b"
+        },
+
+        "keyword-declaration": {
+            "name": "keyword.declaration.holy",
+            "match": "\\b(become|receiving|reveals|revealing)\\b"
+        },
+
+        "storage-type": {
+            "name": "storage.type.holy",
+            "match": "\\b(atom|fractional|word|dogma|void)\\b"
+        },
+
+        "keyword-operator": {
+            "name": "keyword.operator.holy",
+            "match": "\\b(plus|minus|times|over|is|and)\\b"
+        },
+
+        "variable-language": {
+            "name": "variable.language.holy",
+            "match": "\\b(its)\\b"
+        },
+
+        "keyword-other": {
+            "name": "keyword.other.holy",
+            "match": "\\b(praying|upon|from|of|as|no|not|greater|lesser|than)\\b"
+        }
+
+    }
+}

@@ -1,0 +1,71 @@
+{
+    "name": "holy-lang",
+    "displayName": "Holy Language",
+    "description": "Syntax highlighting, snippets, file icons and run support for Holy Lang",
+    "version": "0.1.1",
+    "publisher": "Gaok1",
+    "icon": "icon.png",
+    "license": "MIT",
+    "engines": { "vscode": "^1.75.0" },
+    "categories": ["Programming Languages"],
+    "keywords": ["holy", "holy-lang", "holyscript"],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/gaok1/holy-lang"
+    },
+    "main": "./extension.js",
+    "activationEvents": [
+        "onLanguage:holy"
+    ],
+    "contributes": {
+        "commands": [
+            {
+                "command": "holy.runFile",
+                "title": "Run Holy Script",
+                "icon": "$(play)"
+            }
+        ],
+        "menus": {
+            "editor/title/run": [
+                {
+                    "command": "holy.runFile",
+                    "when": "resourceExtname == '.holy'",
+                    "group": "navigation"
+                }
+            ]
+        },
+        "languages": [
+            {
+                "id": "holy",
+                "aliases": ["Holy", "holy-lang"],
+                "extensions": [".holy"],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "holy",
+                "scopeName": "source.holy",
+                "path": "./syntaxes/holy.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "holy",
+                "path": "./snippets/holy.json"
+            }
+        ],
+        "iconThemes": [
+            {
+                "id": "holy-icons",
+                "label": "Holy Language Icons",
+                "path": "./holy-icon-theme.json"
+            }
+        ],
+        "configurationDefaults": {
+            "code-runner.executorMap": {
+                "holy": "holy"
+            }
+        }
+    }
+}
