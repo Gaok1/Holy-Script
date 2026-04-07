@@ -5,22 +5,22 @@ scripture Person
     name of word
     age of atom
 
--- Sin (exceção)
+-- Sin (exception)
 sin AgeError
     message of word
 
--- Salm comum
+-- Salm 
 salm greet receiving p of Person reveals void
     hail proclaim praying name from p
 
--- Salm com lógica
+
 salm factorial receiving n of atom reveals atom
     whether n is 0
         reveal 1
     let there result of atom be n times hail factorial praying n minus 1
     reveal result
 
--- Method salm bindado a Person
+-- salm binded to Person
 salm describe upon Person reveals void
     let there msg of word be name from its
     hail proclaim praying msg
