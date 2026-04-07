@@ -1,21 +1,21 @@
 # Holy Lang
 
-Uma linguagem de programação interpretada com sintaxe em inglês arcaico/bíblico, implementada em Rust.
+An interpreted programming language with archaic/biblical English syntax, implemented in Rust.
 
 ---
 
-## Instalação
+## Installation
 
 ```bash
 git clone <repo>
 cd holy-lang
 
-# rodar direto
-cargo run -- programa.holy
+# run directly
+cargo run -- program.holy
 
-# instalar globalmente
+# install globally
 cargo install --path .
-holy-lang programa.holy
+holy program.holy
 ```
 
 ---
@@ -23,195 +23,73 @@ holy-lang programa.holy
 ## CLI
 
 ```bash
-holy-lang <arquivo.holy>          # executa
-holy-lang --tree <arquivo.holy>   # mostra a parse tree (não executa)
-holy-lang -t <arquivo.holy>       # idem
+holy <file.holy>          # execute a program
+holy --tree <file.holy>   # print the parse tree (does not execute)
+holy -t <file.holy>       # same as --tree
 ```
 
 ---
 
-## Estrutura de um programa
+## Program structure
 
-Todo programa começa com declarações de topo (`scripture`, `sin`, `salm`) e termina **obrigatoriamente** com `amen`. Exatamente um `amen` por arquivo.
+Every program begins with top-level declarations (`scripture`, `sin`, `covenant`, `salm`) and **must** end with exactly one `amen`.
 
 ```
--- comentário de linha
+-- line comment
 
 scripture ...
 sin ...
+covenant ...
 salm ...
 
--- statements principais
+-- top-level statements
 
 amen
 ```
 
 ---
 
-## Tipos
+## Types
 
-| Keyword      | Tipo              | Exemplo de literal       |
+| Keyword      | Type              | Literal example          |
 |--------------|-------------------|--------------------------|
-| `atom`       | inteiro (i64)     | `42`, `-7`               |
+| `atom`       | integer (i64)     | `42`, `-7`               |
 | `fractional` | float (f64)       | `3.14`, `-0.5`           |
-| `word`       | string            | `"texto"`                |
+| `word`       | string            | `"hello"`                |
 | `dogma`      | bool              | `blessed` / `forsaken`   |
-| `void`       | sem retorno       | —                        |
-| `NomeCustom` | scripture criado  | —                        |
+| `void`       | no return value   | —                        |
+| `CustomName` | user scripture    | —                        |
 
 ---
 
-## Variáveis
+## Variables
 
 ```
--- declarar sem valor (recebe padrão do tipo)
+-- declare without a value (zero-initialised to the type's default)
 let there be x of atom
 
--- declarar com valor
-let there nome of word be "Gabriel"
+-- declare with a value
+let there name of word be "Gabriel"
 
--- reatribuir
+-- reassign
 x become 42
 ```
 
 ---
 
-## Scriptures (structs)
+## Operators
 
+### Arithmetic
 ```
-scripture Pessoa
-    nome of word
-    idade of atom
-
--- instanciar (args na ordem dos campos)
-let there p of Pessoa be manifest Pessoa praying "Ana", 30
-
--- acessar campo
-let there n of word be nome from p
+a plus b        -- addition / string concatenation
+a minus b       -- subtraction
+a times b       -- multiplication
+a over b        -- division
+a remainder b   -- modulo (atom only)
+negate a        -- unary minus
 ```
 
----
-
-## Sins (exceções)
-
-```
-sin Falha
-    mensagem of word
-
--- sin sem campos também é válido
-sin FalhaSimples
-```
-
----
-
-## Salms (funções)
-
-```
-salm somar receiving a of atom, b of atom reveals atom
-    reveal a plus b
-
--- chamar
-let there resultado of atom be hail somar praying 3 and 5
-
--- sem parâmetros
-salm cumprimentar reveals void
-    hail proclaim praying "Salve!"
-```
-
-O último parâmetro pode usar `and` no lugar de `,`:
-```
-salm foo receiving a of atom, b of word and c of dogma reveals void
-    reveal blessed
-```
-
----
-
-## Method Salms (métodos)
-
-Bindados a um scripture via `upon`. No corpo, `its` referencia a instância.
-
-```
-salm apresentar upon Pessoa reveals void
-    hail proclaim praying nome from its
-
--- chamar
-hail apresentar upon p
-```
-
----
-
-## Construtor
-
-Convenção: salm com o mesmo nome do scripture que retorna `manifest`.
-
-```
-salm Pessoa receiving nome of word and idade of atom reveals Pessoa
-    reveal manifest Pessoa praying nome and idade
-
-let there p of Pessoa be hail Pessoa praying "Ana" and 30
-```
-
----
-
-## Condicional
-
-```
-whether x greater than 10
-    hail proclaim praying "grande"
-otherwise so x is 10
-    hail proclaim praying "exato"
-otherwise
-    hail proclaim praying "pequeno"
-```
-
----
-
-## Loop
-
-Executa enquanto a condição for verdadeira (`blessed` / truthy).
-
-```
-let there be i of atom
-i become 1
-litany for i no greater than 5
-    hail proclaim praying i
-    i become i plus 1
-```
-
----
-
-## Confess (try / catch / finally)
-
-```
-sin Problema
-    descricao of word
-
-confess
-    transgress Problema praying "algo errado"
-answer for Problema as err
-    hail proclaim praying descricao from err
-absolve
-    hail proclaim praying "sempre executa"
-```
-
-- `confess` → bloco try  
-- `answer for TipoDoSin` → catch (um por tipo)  
-- `as nome` → opcional, vincula a instância do sin a uma variável  
-- `absolve` → finally (opcional)  
-
----
-
-## Operadores
-
-### Aritméticos
-```
-a plus b      -- adição / concatenação de word
-a minus b     -- subtração
-a times b     -- multiplicação
-a over b      -- divisão
-```
-
-### Comparação
+### Comparison
 ```
 a is b              -- ==
 a is not b          -- !=
@@ -221,61 +99,223 @@ a no greater than b -- <=
 a no lesser than b  -- >=
 ```
 
-> Comparações numéricas funcionam com `atom` e `fractional`.  
-> `is` / `is not` funcionam com qualquer tipo.
+> Numeric comparisons work with `atom` and `fractional`.  
+> `is` / `is not` work with any type.
 
 ---
 
-## Salms built-in
-
-| Salm       | Descrição                                |
-|------------|------------------------------------------|
-| `proclaim` | imprime com quebra de linha              |
-| `herald`   | imprime sem quebra de linha              |
-| `inquire`  | lê uma linha do stdin → `word`           |
-| `atom_of`  | converte `word` → `atom`                 |
-| `word_of`  | converte qualquer valor → `word`         |
-
----
-
-## Exemplo completo
+## Scriptures (structs)
 
 ```
-scripture Apostata
-    nome of word
-    age of atom
-    herege of dogma
+scripture Person
+    name of word
+    age  of atom
 
-sin HeresiaDetectada
-    motivo of word
+-- instantiate (args in field declaration order)
+let there p of Person be manifest Person praying "Ana", 30
 
-salm Apostata receiving nome of word, age of atom and herege of dogma reveals Apostata
-    reveal manifest Apostata praying nome, age and herege
+-- field access
+let there n of word be name from p
+```
 
-salm julgar upon Apostata reveals void
-    whether herege from its
-        transgress HeresiaDetectada praying nome from its plus " é herege"
-    otherwise
-        hail proclaim praying nome from its plus " está absolvido"
+---
 
-let there a of Apostata be hail Apostata praying "João", 33 and blessed
+## Sins (exceptions)
+
+```
+sin Failure
+    message of word
+
+-- a sin with no fields is also valid
+sin SimpleFailure
+```
+
+---
+
+## Covenants (enums)
+
+```
+covenant Direction
+    North
+    South
+    East
+    West
+
+let there d of Direction be North
+```
+
+---
+
+## Salms (functions)
+
+```
+salm add receiving a of atom, b of atom reveals atom
+    reveal a plus b
+
+-- call
+let there result of atom be hail add praying 3, 5
+
+-- no parameters
+salm greet reveals void
+    hail proclaim praying "Hail!"
+```
+
+---
+
+## Method Salms
+
+Bound to a scripture via `upon`. Inside the body, `its` references the instance.
+
+```
+salm introduce upon Person reveals void
+    hail proclaim praying name from its
+
+-- call
+hail introduce upon p
+```
+
+---
+
+## Constructor convention
+
+A salm with the same name as a scripture that returns `manifest`:
+
+```
+salm Person receiving name of word, age of atom reveals Person
+    reveal manifest Person praying name, age
+
+let there p of Person be hail Person praying "Ana", 30
+```
+
+---
+
+## Conditional
+
+```
+whether x greater than 10
+    hail proclaim praying "large"
+otherwise so x is 10
+    hail proclaim praying "exact"
+otherwise
+    hail proclaim praying "small"
+```
+
+---
+
+## Loop
+
+Executes while the condition is truthy (`blessed`).
+
+```
+let there be i of atom
+i become 1
+litany for i no greater than 5
+    hail proclaim praying hail word_of praying i
+    i become i plus 1
+```
+
+### Loop control
+
+```
+forsake   -- break: exits the litany immediately
+ascend    -- continue: jumps to the next iteration
+```
+
+---
+
+## Confess (try / catch / finally)
+
+```
+sin Problem
+    description of word
 
 confess
-    hail julgar upon a
-answer for HeresiaDetectada as err
-    hail proclaim praying motivo from err
+    transgress Problem praying "something went wrong"
+answer for Problem as err
+    hail proclaim praying description from err
 absolve
-    hail proclaim praying "julgamento encerrado"
+    hail proclaim praying "always runs"
+```
+
+- `confess` → try block
+- `answer for SinType` → catch (one clause per type)
+- `as name` → optional, binds the sin instance to a variable
+- `absolve` → finally (optional)
+
+---
+
+## Discern (pattern matching)
+
+```
+covenant Status
+    Active
+    Inactive
+    Banned
+
+let there s of Status be Active
+
+discern s
+    as Active
+        hail proclaim praying "online"
+    as Inactive
+        hail proclaim praying "away"
+    otherwise
+        hail proclaim praying "banned"
+```
+
+---
+
+## Built-in salms
+
+| Salm       | Description                              |
+|------------|------------------------------------------|
+| `proclaim` | print with newline                       |
+| `herald`   | print without newline                    |
+| `inquire`  | read a line from stdin → `word`          |
+| `atom_of`  | convert `word` → `atom`                 |
+| `word_of`  | convert any value → `word`              |
+
+---
+
+## Full example
+
+```
+scripture Apostate
+    name  of word
+    age   of atom
+    heretic of dogma
+
+sin HeresyDetected
+    reason of word
+
+salm Apostate receiving name of word, age of atom, heretic of dogma reveals Apostate
+    reveal manifest Apostate praying name, age, heretic
+
+salm judge upon Apostate reveals void
+    whether heretic from its
+        transgress HeresyDetected praying name from its plus " is a heretic"
+    otherwise
+        hail proclaim praying name from its plus " is absolved"
+
+let there a of Apostate be hail Apostate praying "John", 33, blessed
+
+confess
+    hail judge upon a
+answer for HeresyDetected as err
+    hail proclaim praying reason from err
+absolve
+    hail proclaim praying "judgment concluded"
 
 amen
 ```
 
 ---
 
-## Palavras reservadas
+## Reserved words
 
-`testament` `revealing` `scripture` `sin` `salm` `upon` `receiving` `reveals`
+`testament` `revealing` `scripture` `sin` `covenant` `salm` `upon` `receiving` `reveals`
 `let` `there` `be` `of` `become` `hail` `praying` `reveal` `whether` `otherwise`
-`so` `litany` `for` `confess` `answer` `absolve` `as` `transgress` `manifest`
-`from` `its` `amen` `plus` `minus` `times` `over` `is` `not` `greater` `lesser`
+`so` `litany` `for` `forsake` `ascend` `confess` `answer` `absolve` `as` `transgress`
+`manifest` `from` `its` `discern` `amen` `negate` `remainder`
+`plus` `minus` `times` `over` `is` `not` `greater` `lesser`
 `than` `no` `blessed` `forsaken` `and` `void` `atom` `fractional` `word` `dogma`
