@@ -87,7 +87,24 @@ This is unambiguous because the inner call reaches the end of the outer argument
 hail add praying hail double praying 3 and 2
 ```
 
-This is ambiguous in the wrong way: `and 2` is read as part of the inner `double` call.
+At a glance, a reader may intend this to mean:
+
+```text
+add(double(3), 2)
+```
+
+But that is **not** how the parser reads it.
+
+Because the inner call is still open, `and 2` is consumed by `double`, so the parser reads it like this:
+
+```text
+add(double(3, 2))
+```
+
+In other words:
+
+- intended outer reading: second argument of `add`
+- actual parse: second argument of `double`
 
 To close the inner call before continuing the outer one, use `thus`:
 
@@ -97,7 +114,7 @@ hail add praying hail double praying 3 thus and 2
 
 This is read as:
 
-```holy
+```text
 add(double(3), 2)
 ```
 
