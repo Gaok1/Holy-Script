@@ -19,6 +19,7 @@ pub fn is_truthy(v: &Value) -> bool {
         Value::Int(n) => *n != 0,
         Value::Float(f) => *f != 0.0,
         Value::Str(s) => !s.is_empty(),
+        Value::Legion(items) => !items.is_empty(),
         Value::Void => false,
         Value::CovenantVariant { .. } => true,
         Value::Scripture { .. } => true,
@@ -35,6 +36,7 @@ pub fn default_value(ty: &HolyType) -> Value {
         HolyType::Custom(_)       => Value::Void,
         HolyType::Generic(name, _) if name == "grace" => default_grace(),
         HolyType::Generic(name, _) if name == "verdict" => default_verdict(),
+        HolyType::Generic(name, _) if name == "legion" => Value::Legion(Vec::new()),
         HolyType::Generic(_, _)   => Value::Void,
     }
 }

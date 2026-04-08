@@ -95,6 +95,7 @@ The runtime raises these sins automatically for common errors. They can be caugh
 | `UndefinedVariable`       | variable not declared in scope |
 | `UndefinedSalm`           | `hail` of an undeclared salm name |
 | `UndefinedField`          | `from` on a non-existent field |
+| `IndexOutOfBounds`        | `at` on a `word` or `legion` with an invalid index |
 | `UndefinedSin`            | `transgress` of an undeclared sin |
 | `UndefinedType`           | type annotation refers to an unknown type |
 | `InvalidDiscern`          | `discern` on a non-covenant value, or no branch matched |

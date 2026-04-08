@@ -12,6 +12,7 @@ pub fn builtin_sins() -> HashMap<String, Vec<(String, HolyType)>> {
         "InvalidArgumentCount",
         "InvalidContext",
         "InvalidDiscern",
+        "IndexOutOfBounds",
         "InvalidReturnType",
         "TypeError",
         "UndefinedField",

@@ -1,5 +1,6 @@
 mod common;
 use common::*;
+use holy_script::interpreter::Value;
 
 // ── Aritmética ───────────────────────────────────────────────────
 
@@ -217,6 +218,87 @@ amen
 "#);
     assert!(msg.contains("TypeError"), "got: {msg}");
     assert!(msg.contains("parameter 'a'"), "got: {msg}");
+}
+
+#[test]
+fn word_builtin_methods_work() {
+    let i = run(r#"let there s of word be "holy"
+let there len of atom be hail length upon s
+let there second of word be hail at upon s praying 1
+let there empty of dogma be hail is_empty upon s
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 4);
+    assert_eq!(get_str(&i, "second"), "o");
+    assert!(!get_bool(&i, "empty"));
+}
+
+#[test]
+fn legion_constructor_and_methods_work() {
+    let i = run(r#"let there xs of legion of atom be hail legion praying 3, 5 and 8
+let there len of atom be hail length upon xs
+let there picked of atom be hail at upon xs praying 1
+let there empty of dogma be hail is_empty upon xs
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 3);
+    assert_eq!(get_int(&i, "picked"), 5);
+    assert!(!get_bool(&i, "empty"));
+}
+
+#[test]
+fn legion_defaults_to_empty() {
+    let i = run(r#"let there be xs of legion of atom
+let there len of atom be hail length upon xs
+let there empty of dogma be hail is_empty upon xs
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 0);
+    assert!(get_bool(&i, "empty"));
+}
+
+#[test]
+fn legion_push_returns_new_legion() {
+    let i = run(r#"let there xs of legion of atom be hail legion praying 1 and 2
+xs become hail push upon xs praying 9
+let there len of atom be hail length upon xs
+let there last of atom be hail at upon xs praying 2
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 3);
+    assert_eq!(get_int(&i, "last"), 9);
+    match i.env_get("xs") {
+        Some(Value::Legion(items)) => assert_eq!(items.len(), 3),
+        other => panic!("expected legion for 'xs', got {:?}", other),
+    }
+}
+
+#[test]
+fn legion_rejects_wrong_element_type_on_declaration() {
+    let msg = run_err(r#"let there xs of legion of atom be hail legion praying 1 and "oops"
+amen
+"#);
+    assert!(msg.contains("TypeError"), "got: {msg}");
+    assert!(msg.contains("legion of atom"), "got: {msg}");
+}
+
+#[test]
+fn legion_push_rejects_wrong_element_type() {
+    let msg = run_err(r#"let there xs of legion of atom be hail legion praying 1 and 2
+xs become hail push upon xs praying "oops"
+amen
+"#);
+    assert!(msg.contains("TypeError"), "got: {msg}");
+    assert!(msg.contains("invalid legion element"), "got: {msg}");
+}
+
+#[test]
+fn builtin_at_reports_bounds_errors() {
+    let msg = run_err(r#"let there xs of legion of atom be hail legion praying 1 and 2
+let there bad of atom be hail at upon xs praying 9
+amen
+"#);
+    assert!(msg.contains("IndexOutOfBounds"), "got: {msg}");
 }
 
 // ── Sin / Confess ─────────────────────────────────────────────────

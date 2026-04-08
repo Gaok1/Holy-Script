@@ -7,6 +7,8 @@ Types are declared explicitly and enforced at runtime. Variables, scripture fiel
 
 Across Holy's list syntax, the final separator may be written as `and`: `a and b`, `a, b and c`, `Pair of atom and word`, `receiving x of atom and y of atom`.
 
+Holy also includes the built-in generic type `legion of T`, a typed collection. Build one with `hail legion praying ...`, then call built-in methods like `hail length upon xs`, `hail at upon xs praying 0`, and `hail push upon xs praying value`.
+
 ```holy
 scripture Person
     name of word
@@ -28,6 +30,7 @@ amen
 | Topic | Description |
 |-------|-------------|
 | [Types & Variables](docs/types.md) | Primitive types, literals, variables, operators, expression grouping |
+| [Collections](docs/collections.md) | `legion of T`, built-in collection methods, built-in `word` methods |
 | [Scriptures](docs/scriptures.md) | Struct-like data types, field access, method salms |
 | [Covenants](docs/covenants.md) | Sum types, pattern matching with `discern`, built-in `grace` and `verdict` |
 | [Salms](docs/salms.md) | Functions, parameters, return values, built-in salms |

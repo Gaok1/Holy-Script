@@ -148,6 +148,7 @@ These salms are available in every program without declaration.
 | `inquire`  | `→ word`                         | Read a line from stdin               |
 | `atom_of`  | `receiving val of word → atom`   | Parse a `word` as an integer         |
 | `word_of`  | `receiving val of any → word`    | Convert any value to its string form |
+| `legion`   | `receiving values of T... → legion of T` | Build a typed collection from its arguments |
 
 All must be called with `hail`:
 
@@ -157,6 +158,7 @@ hail herald praying "no newline"
 let there line of word be hail inquire
 let there n of atom be hail atom_of praying line
 let there s of word be hail word_of praying 3.14
+let there xs of legion of atom be hail legion praying 1, 2 and 3
 ```
 
 `proclaim` and `herald` accept a `word`; pass any other type through `word_of` first:
@@ -165,6 +167,49 @@ let there s of word be hail word_of praying 3.14
 let there x of atom be 42
 hail proclaim praying hail word_of praying x
 ```
+
+## Built-in methods
+
+Some runtime values expose methods without a user declaration.
+
+### `word`
+
+```holy
+let there s of word be "holy"
+let there len of atom be hail length upon s
+let there second of word be hail at upon s praying 1
+let there empty of dogma be hail is_empty upon s
+```
+
+Supported built-in methods on `word`:
+
+| Method                 | Returns | Meaning |
+|------------------------|---------|---------|
+| `hail length upon s`   | `atom`  | number of characters |
+| `hail is_empty upon s` | `dogma` | whether the word is empty |
+| `hail at upon s praying i` | `word` | character at index `i` |
+
+`at` raises `IndexOutOfBounds` for an invalid index.
+
+### `legion of T`
+
+```holy
+let there xs of legion of atom be hail legion praying 10, 20 and 30
+let there len of atom be hail length upon xs
+let there first of atom be hail at upon xs praying 0
+xs become hail push upon xs praying 40
+```
+
+Supported built-in methods on `legion`:
+
+| Method                  | Returns         | Meaning |
+|-------------------------|-----------------|---------|
+| `hail length upon xs`   | `atom`          | number of elements |
+| `hail is_empty upon xs` | `dogma`         | whether the legion has no elements |
+| `hail at upon xs praying i` | `T`        | element at index `i` |
+| `hail push upon xs praying v` | `legion of T` | returns a new legion with `v` appended |
+
+`push` does not mutate the existing value in place. Like other Holy values, you reassign the variable to the returned value.
 
 ---
 

@@ -131,14 +131,15 @@ impl Interpreter {
                     self.env.define(name, inferred_ty, v);
                 }
             }
-            Stmt::FnCallStmt { name, args, .. } => {
+            Stmt::FnCallStmt { name, args, type_args } => {
                 let vals = self.eval_args(args)?;
-                self.call_salm(name, vals)?;
+                self.call_salm(name, type_args, vals)?;
             }
             Stmt::MethodCallStmt { method, target, args } => {
                 let target_val = self.lookup_var(target)?;
+                let target_ty = self.env.get_type(target);
                 let vals = self.eval_args(args)?;
-                self.call_method(method, target_val, vals)?;
+                self.call_method(method, target_val, target_ty, vals)?;
             }
             Stmt::Reveal(expr) => {
                 let v = self.eval_expr(expr)?;
@@ -345,8 +346,11 @@ impl Interpreter {
         ))
     }
 
-    fn call_salm(&mut self, name: &str, args: Vec<Value>) -> EvalResult {
+    fn call_salm(&mut self, name: &str, _type_args: &[HolyType], args: Vec<Value>) -> EvalResult {
         match name {
+            "legion" => {
+                return Ok(Value::Legion(args));
+            }
             "proclaim" => {
                 let s = args.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(" ");
                 println!("{}", s);
@@ -383,7 +387,11 @@ impl Interpreter {
         self.exec_salm_body(&def, None, args)
     }
 
-    fn call_method(&mut self, method: &str, target: Value, args: Vec<Value>) -> EvalResult {
+    fn call_method(&mut self, method: &str, target: Value, target_ty: Option<HolyType>, args: Vec<Value>) -> EvalResult {
+        if let Some(result) = self.call_builtin_method(method, &target, target_ty.as_ref(), &args)? {
+            return Ok(result);
+        }
+
         let type_name = match &target {
             Value::Scripture { type_name, .. } => type_name.clone(),
             other => {
@@ -399,6 +407,107 @@ impl Interpreter {
             .clone();
 
         self.exec_salm_body(&def, Some(target), args)
+    }
+
+    fn call_builtin_method(
+        &self,
+        method: &str,
+        target: &Value,
+        target_ty: Option<&HolyType>,
+        args: &[Value],
+    ) -> Result<Option<Value>, HolyError> {
+        match target {
+            Value::Str(s) => self.call_word_method(method, s, args).map(Some),
+            Value::Legion(items) => self.call_legion_method(method, items, target_ty, args).map(Some),
+            _ => Ok(None),
+        }
+    }
+
+    fn call_word_method(&self, method: &str, target: &str, args: &[Value]) -> EvalResult {
+        match method {
+            "length" => {
+                self.expect_builtin_arg_count(method, args, 0)?;
+                Ok(Value::Int(target.chars().count() as i64))
+            }
+            "is_empty" => {
+                self.expect_builtin_arg_count(method, args, 0)?;
+                Ok(Value::Bool(target.is_empty()))
+            }
+            "at" => {
+                self.expect_builtin_arg_count(method, args, 1)?;
+                let index = self.expect_atom_arg(method, &args[0])?;
+                let ch = target
+                    .chars()
+                    .nth(index as usize)
+                    .ok_or_else(|| builtin_sin("IndexOutOfBounds", format!("index {} is out of bounds", index)))?;
+                Ok(Value::Str(ch.to_string()))
+            }
+            _ => Err(builtin_sin("UndefinedMethod", format!("method '{}' not found", method))),
+        }
+    }
+
+    fn call_legion_method(
+        &self,
+        method: &str,
+        items: &[Value],
+        target_ty: Option<&HolyType>,
+        args: &[Value],
+    ) -> EvalResult {
+        match method {
+            "length" => {
+                self.expect_builtin_arg_count(method, args, 0)?;
+                Ok(Value::Int(items.len() as i64))
+            }
+            "is_empty" => {
+                self.expect_builtin_arg_count(method, args, 0)?;
+                Ok(Value::Bool(items.is_empty()))
+            }
+            "at" => {
+                self.expect_builtin_arg_count(method, args, 1)?;
+                let index = self.expect_atom_arg(method, &args[0])?;
+                let value = items
+                    .get(index as usize)
+                    .cloned()
+                    .ok_or_else(|| builtin_sin("IndexOutOfBounds", format!("index {} is out of bounds", index)))?;
+                Ok(value)
+            }
+            "push" => {
+                self.expect_builtin_arg_count(method, args, 1)?;
+                if let Some(HolyType::Generic(name, type_args)) = target_ty {
+                    if name == "legion" {
+                        if let Some(inner_ty) = type_args.first() {
+                            self.expect_type(inner_ty, &args[0], "invalid legion element")?;
+                        }
+                    }
+                }
+                let mut out = items.to_vec();
+                out.push(args[0].clone());
+                Ok(Value::Legion(out))
+            }
+            _ => Err(builtin_sin("UndefinedMethod", format!("method '{}' not found", method))),
+        }
+    }
+
+    fn expect_builtin_arg_count(&self, method: &str, args: &[Value], expected: usize) -> Result<(), HolyError> {
+        if args.len() == expected {
+            Ok(())
+        } else {
+            Err(builtin_sin(
+                "InvalidArgumentCount",
+                format!("method '{}' expects {} arguments, got {}", method, expected, args.len()),
+            ))
+        }
+    }
+
+    fn expect_atom_arg(&self, method: &str, value: &Value) -> Result<i64, HolyError> {
+        match value {
+            Value::Int(n) if *n >= 0 => Ok(*n),
+            Value::Int(n) => Err(builtin_sin("IndexOutOfBounds", format!("index {} is out of bounds", n))),
+            other => Err(builtin_sin(
+                "TypeError",
+                format!("method '{}' expects an atom index, got {}", method, self.describe_value(other)),
+            )),
+        }
     }
 
     fn exec_salm_body(&mut self, def: &SalmDef, self_val: Option<Value>, args: Vec<Value>) -> EvalResult {
@@ -514,15 +623,16 @@ impl Interpreter {
                 eval_binop(op, lv, rv)
             }
 
-            Expr::FnCall { name, args, .. } => {
+            Expr::FnCall { name, args, type_args } => {
                 let vals = self.eval_args(args)?;
-                self.call_salm(name, vals)
+                self.call_salm(name, type_args, vals)
             }
 
             Expr::MethodCall { method, target, args } => {
                 let tv = self.lookup_var(target)?;
+                let target_ty = self.env.get_type(target);
                 let vals = self.eval_args(args)?;
-                self.call_method(method, tv, vals)
+                self.call_method(method, tv, target_ty, vals)
             }
 
             Expr::Manifest { scripture, args } => {
@@ -791,7 +901,11 @@ impl Interpreter {
     }
 
     fn ensure_custom_type_exists(&self, name: &str) -> Result<(), HolyError> {
-        if self.scriptures.contains_key(name) || self.covenants.contains_key(name) || self.sins.contains_key(name) {
+        if name == "legion"
+            || self.scriptures.contains_key(name)
+            || self.covenants.contains_key(name)
+            || self.sins.contains_key(name)
+        {
             Ok(())
         } else {
             Err(builtin_sin("UndefinedType", format!("type '{}' is not declared", name)))
@@ -836,6 +950,10 @@ impl Interpreter {
                         _ => false,
                     }
                 }
+                ("legion", Value::Legion(items)) => match args.as_slice() {
+                    [inner_ty] => items.iter().all(|item| self.value_matches_type(inner_ty, item)),
+                    _ => false,
+                },
                 _ => match value {
                     Value::Scripture { type_name, .. }    => type_name == name,
                     Value::CovenantVariant { covenant, .. } => covenant == name,
@@ -851,6 +969,7 @@ impl Interpreter {
             Value::Float(_) => HolyType::Fractional,
             Value::Str(_) => HolyType::Word,
             Value::Bool(_) => HolyType::Dogma,
+            Value::Legion(_) => HolyType::Generic("legion".into(), vec![]),
             Value::Void => HolyType::Void,
             Value::CovenantVariant { covenant, .. } => HolyType::Custom(covenant.clone()),
             Value::Scripture { type_name, .. } => HolyType::Custom(type_name.clone()),
@@ -878,6 +997,7 @@ impl Interpreter {
             Value::Float(_) => "fractional".into(),
             Value::Str(_) => "word".into(),
             Value::Bool(_) => "dogma".into(),
+            Value::Legion(_) => "legion".into(),
             Value::Void => "void".into(),
             Value::CovenantVariant { covenant, .. } => covenant.clone(),
             Value::Scripture { type_name, .. } => type_name.clone(),

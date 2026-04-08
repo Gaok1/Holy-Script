@@ -11,6 +11,7 @@ Holy is strongly typed: values must match their declared types. Type checks happ
 | `word`       | string (UTF-8)       | `""`          | `"hello"`, `""`       |
 | `dogma`      | boolean              | `forsaken`    | `blessed`, `forsaken` |
 | `void`       | no value             | —             | —                     |
+| `legion of T`| typed collection     | empty legion  | `hail legion praying 1, 2 and 3` |
 
 `blessed` is `true`; `forsaken` is `false`.
 
@@ -36,6 +37,23 @@ let there greeting of word be "Hail, world!"
 let there active of dogma be blessed
 let there ratio of fractional be 3.14
 ```
+
+### `legion of T`
+
+`legion of T` is Holy's built-in typed collection. Its element type is always written explicitly.
+
+```holy
+let there xs of legion of atom be hail legion praying 1, 2 and 3
+let there names of legion of word be hail legion praying "Ava" and "Noah"
+```
+
+If declared without a value, a `legion` starts empty:
+
+```holy
+let there be xs of legion of atom
+```
+
+Runtime type checks still apply, so a `legion of atom` cannot receive a `word`.
 
 ### Reassignment
 

@@ -5,7 +5,7 @@ VS Code extension for [Holy Lang](https://github.com/gaok1/holy-lang) — an int
 ## Features
 
 - Syntax highlighting for `.holy` files
-- Code snippets
+- Code snippets, including `legion`, `length`, `at`, and `push`
 - File icon for `.holy` files (enable via **File → Preferences → File Icon Theme → Holy Language Icons**)
 - **Run button** (▶) in the editor title bar — executes the current file with `holy`
 
@@ -47,6 +47,8 @@ salm add receiving a of atom, b of atom reveals atom
 
 let there p of Point be manifest Point praying 3, 4
 let there r of atom be hail add praying 1, 2
+let there xs of legion of atom be hail legion praying 1, 2 and 3
+let there n of atom be hail length upon xs
 
 whether r is 3
     hail proclaim praying "correct"

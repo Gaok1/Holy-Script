@@ -142,7 +142,7 @@
         "body": [
             "confess",
             "\t${1:hail proclaim praying \"tentativa\"}",
-            "answer for ${2|DivisionByZero,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} as ${3:err}",
+            "answer for ${2|DivisionByZero,IndexOutOfBounds,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} as ${3:err}",
             "\t${0:hail proclaim praying \"erro capturado\"}"
         ],
         "description": "Bloco confess / answer for"
@@ -153,7 +153,7 @@
         "body": [
             "confess",
             "\t${1:hail proclaim praying \"tentativa\"}",
-            "answer for ${2|DivisionByZero,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} as ${3:err}",
+            "answer for ${2|DivisionByZero,IndexOutOfBounds,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} as ${3:err}",
             "\t${4:hail proclaim praying \"erro\"}",
             "absolve",
             "\t${0:hail proclaim praying \"sempre\"}"
@@ -188,9 +188,58 @@
     "transgress (throw)": {
         "prefix": "transgress",
         "body": [
-            "transgress ${1|DivisionByZero,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} praying ${0:\"mensagem\"}"
+            "transgress ${1|DivisionByZero,IndexOutOfBounds,InvalidArgumentCount,InvalidContext,InvalidDiscern,TypeError,UndefinedField,UndefinedMethod,UndefinedSalm,UndefinedScripture,UndefinedSin,UndefinedVariable,NomeSin|} praying ${0:\"mensagem\"}"
         ],
         "description": "Lança um sin"
+    },
+
+    "Builtin Sin: IndexOutOfBounds": {
+        "prefix": "sin.index",
+        "body": [
+            "answer for IndexOutOfBounds as ${1:err}",
+            "\t${0:caught become message from err}"
+        ],
+        "description": "Captura indice fora do limite"
+    },
+
+    "Legion declaration": {
+        "prefix": "legion",
+        "body": [
+            "let there ${1:xs} of legion of ${2|atom,fractional,word,dogma|} be hail legion praying ${0:1, 2 and 3}"
+        ],
+        "description": "Declara uma legion tipada"
+    },
+
+    "Legion empty declaration": {
+        "prefix": "legion0",
+        "body": [
+            "let there be ${1:xs} of legion of ${2|atom,fractional,word,dogma|}$0"
+        ],
+        "description": "Declara uma legion tipada vazia"
+    },
+
+    "Built-in method length": {
+        "prefix": "mlength",
+        "body": [
+            "hail length upon ${1:value}$0"
+        ],
+        "description": "Chama o method builtin length"
+    },
+
+    "Built-in method at": {
+        "prefix": "mat",
+        "body": [
+            "hail at upon ${1:value} praying ${0:0}"
+        ],
+        "description": "Chama o method builtin at"
+    },
+
+    "Built-in method push": {
+        "prefix": "mpush",
+        "body": [
+            "hail push upon ${1:xs} praying ${0:value}"
+        ],
+        "description": "Chama o method builtin push em uma legion"
     },
 
     "Builtin Sin: DivisionByZero": {

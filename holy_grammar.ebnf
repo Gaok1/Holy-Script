@@ -243,11 +243,26 @@ ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
 -- inquire                            reveals word   -- read a line from stdin
 -- atom_of   receiving val of word    reveals atom   -- parse word → atom
 -- word_of   receiving val of word    reveals word   -- convert any value → word
+-- legion    receiving values...      reveals legion of T  -- build a typed collection from its arguments
+
+-- Built-in methods are runtime-dispatched, not parser keywords.
+-- Examples:
+--   hail length upon some_word
+--   hail at upon some_word praying 0
+--   hail length upon some_legion
+--   hail push upon some_legion praying value
 
 
 -- ============================================================
---  BUILT-IN COVENANTS
+--  BUILT-IN TYPES AND COVENANTS
 -- ============================================================
+--
+-- legion of T
+--   a typed collection value.
+--   examples:
+--     let there xs of legion of atom be hail legion praying 1, 2 and 3
+--     let there first of atom be hail at upon xs praying 0
+--     xs become hail push upon xs praying 4
 --
 -- grace of T
 --   a value that may or may not exist.

@@ -7,6 +7,7 @@ pub enum Value {
     Float(f64),
     Str(String),
     Bool(bool),
+    Legion(Vec<Value>),
     Void,
     CovenantVariant { covenant: String, variant: String, fields: Vec<Value> },
     Scripture { type_name: String, fields: HashMap<String, Value> },
@@ -19,6 +20,10 @@ impl fmt::Display for Value {
             Value::Float(x) => write!(f, "{}", x),
             Value::Str(s) => write!(f, "{}", s),
             Value::Bool(b) => write!(f, "{}", if *b { "blessed" } else { "forsaken" }),
+            Value::Legion(items) => {
+                let args = items.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(", ");
+                write!(f, "[{}]", args)
+            }
             Value::Void => write!(f, "void"),
             Value::CovenantVariant { covenant, variant, fields } => {
                 if fields.is_empty() {
@@ -52,6 +57,7 @@ pub fn value_type_name(value: &Value) -> &'static str {
         Value::Float(_) => "fractional",
         Value::Str(_) => "word",
         Value::Bool(_) => "dogma",
+        Value::Legion(_) => "legion",
         Value::Void => "void",
         Value::CovenantVariant { .. } => "covenant",
         Value::Scripture { .. } => "scripture",
