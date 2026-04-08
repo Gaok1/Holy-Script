@@ -20,8 +20,10 @@ let there tupac of Pessoa be manifest Pessoa praying "tupacao" and forsaken
 
 confess -- try
     hail print_is_from_church upon tupac
+
 answer for IsNotFromChurch as heresy -- catch(IsNotFromChurchException heresy)
-    hail proclaim praying message from heresy
+    hail proclaim praying heresy
+
 absolve  -- finally
     hail proclaim praying "sempre executa este bloco"
 
@@ -38,7 +40,6 @@ litany for blessed
     hail proclaim praying "não passei por aqui"
 
 hail proclaim praying "Fim do loop"
-
 
 amen
 

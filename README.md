@@ -1,7 +1,36 @@
 # Holy Script
 <img width="500" height="500" alt="Emblema da linguagem Holy Script" src="https://github.com/user-attachments/assets/c6a7e8f8-0add-4c8b-bd4b-2d47463baa83" />
 
-An interpreted programming language with archaic/biblical English syntax, implemented in Rust.
+An interpreted, dynamically-typed programming language with archaic/biblical syntax, implemented in Rust.
+
+```
+scripture Person
+    name of word
+    age  of atom
+
+salm greet upon Person reveals void
+    hail proclaim praying "Hail, " plus name from its plus "!"
+
+let there p of Person be manifest Person praying "Gabriel", 30
+hail greet upon p
+
+amen
+```
+
+---
+
+## Documentation
+
+| Topic | Description |
+|-------|-------------|
+| [Types & Variables](docs/types.md) | Primitive types, literals, variables, operators, expression grouping |
+| [Scriptures](docs/scriptures.md) | Struct-like data types, field access, method salms |
+| [Covenants](docs/covenants.md) | Sum types, pattern matching with `discern`, built-in `grace` and `verdict` |
+| [Salms](docs/salms.md) | Functions, parameters, return values, built-in salms |
+| [Control Flow](docs/control-flow.md) | `whether`, `litany for`, `forsake`, `ascend` |
+| [Sins](docs/sins.md) | Exception types, `transgress`, `confess`/`answer for`/`absolve` |
+| [Generics](docs/generics.md) | Type parameters, `thus` disambiguation, generic calls |
+| [Modules](docs/modules.md) | `testament` imports, `revealing` selective imports |
 
 ---
 
@@ -19,8 +48,6 @@ cargo install --path .
 holy program.holy
 ```
 
----
-
 ## CLI
 
 ```bash
@@ -33,324 +60,98 @@ holy -t <file.holy>       # same as --tree
 
 ## Program structure
 
-Every program begins with top-level declarations (`scripture`, `sin`, `covenant`, `salm`) and **must** end with exactly one `amen`.
+Every program has three sections in order:
 
 ```
--- line comment
+-- 1. module imports (optional)
+testament MathUtils
+testament Collections revealing Stack, Queue
 
-scripture ...
-sin ...
-covenant ...
-salm ...
+-- 2. top-level declarations (in any order)
+scripture Point
+    x of atom
+    y of atom
 
--- top-level statements
+sin OutOfBounds
 
-amen
-```
-
----
-
-## Types
-
-| Keyword      | Type              | Literal example          |
-|--------------|-------------------|--------------------------|
-| `atom`       | integer (i64)     | `42`, `-7`               |
-| `fractional` | float (f64)       | `3.14`, `-0.5`           |
-| `word`       | string            | `"hello"`                |
-| `dogma`      | bool              | `blessed` / `forsaken`   |
-| `void`       | no return value   | —                        |
-| `CustomName` | user scripture    | —                        |
-
----
-
-## Variables
-
-```
--- declare without a value (zero-initialised to the type's default)
-let there be x of atom
-
--- declare with a value
-let there name of word be "Gabriel"
-
--- reassign
-x become 42
-```
-
----
-
-## Operators
-
-### Arithmetic
-```
-a plus b        -- addition / string concatenation
-a minus b       -- subtraction
-a times b       -- multiplication
-a over b        -- division
-a remainder b   -- modulo (atom only)
-negate a        -- unary minus
-```
-
-### Comparison
-```
-a is b              -- ==
-a is not b          -- !=
-a greater than b    -- >
-a lesser than b     -- <
-a no greater than b -- <=
-a no lesser than b  -- >=
-```
-
-> Numeric comparisons work with `atom` and `fractional`.  
-> `is` / `is not` work with any type.
-
----
-
-## Scriptures (structs)
-
-```
-scripture Person
-    name of word
-    age  of atom
-
--- instantiate (args in field declaration order)
-let there p of Person be manifest Person praying "Ana", 30
-
--- field access
-let there n of word be name from p
-```
-
----
-
-## Sins (exceptions)
-
-```
-sin Failure
-    message of word
-
--- a sin with no fields is also valid
-sin SimpleFailure
-```
-
----
-
-## Covenants (enums)
-
-Variants can be unit (no data) or carry named fields.
-
-```
 covenant Direction
     North
     South
-    East
-    West
 
-let there d of Direction be North
-```
-
-### Variants with data
-
-Declare fields in an indented block under the variant name.  
-Instantiate with `manifest`, just like a scripture.
-
-```
-covenant Result
-    Ok
-        value of atom
-    Err
-        message of word
-    Nothing               -- unit variant (no fields)
-
-let there r of Result be manifest Ok praying 42
-let there e of Result be manifest Err praying "oops"
-let there n of Result be Nothing
-```
-
-### Pattern matching with data binding
-
-Use `bearing` after the variant name inside `discern` to bind fields positionally:
-
-```
-discern r
-    as Ok bearing v
-        hail proclaim praying hail word_of praying v
-    as Err bearing msg
-        hail proclaim praying msg
-    as Nothing
-        hail proclaim praying "nothing"
-```
-
----
-
-## Salms (functions)
-
-```
 salm add receiving a of atom, b of atom reveals atom
     reveal a plus b
 
--- call
-let there result of atom be hail add praying 3, 5
+-- 3. top-level statements
+let there p of Point be manifest Point praying 3, 4
 
--- no parameters
-salm greet reveals void
-    hail proclaim praying "Hail!"
+amen       -- required: marks the end of the program
 ```
+
+Every program **must** end with `amen`. Comments start with `--`.
 
 ---
 
-## Method Salms
+## Quick reference
 
-Bound to a scripture via `upon`. Inside the body, `its` references the instance.
-
+### Variables
 ```
-salm introduce upon Person reveals void
-    hail proclaim praying name from its
-
--- call
-hail introduce upon p
+let there be x of atom          -- declare, zero-initialised
+let there name of word be "Hi"  -- declare with value
+x become 99                     -- reassign
 ```
 
----
-
-## Constructor convention
-
-A salm with the same name as a scripture that returns `manifest`:
-
+### Operators
 ```
-salm Person receiving name of word, age of atom reveals Person
-    reveal manifest Person praying name, age
-
-let there p of Person be hail Person praying "Ana", 30
+a plus b   a minus b   a times b   a over b   a remainder b   negate a
+a is b     a is not b
+a greater than b    a lesser than b
+a no greater than b   a no lesser than b
 ```
 
----
-
-## Conditional
-
+### Expression grouping
 ```
-whether x greater than 10
-    hail proclaim praying "large"
-otherwise so x is 10
-    hail proclaim praying "exact"
+after 3 times 5 thus        -- (3 * 5) = 15
+5 plus after 3 times 2 thus -- 5 + (3 * 2) = 11
+```
+
+### Functions
+```
+salm double receiving n of atom reveals atom
+    reveal n times 2
+
+let there x of atom be hail double praying 7
+```
+
+### Conditionals & loops
+```
+whether x greater than 0
+    hail proclaim praying "positive"
 otherwise
-    hail proclaim praying "small"
-```
+    hail proclaim praying "non-positive"
 
----
-
-## Loop
-
-Executes while the condition is truthy (`blessed`).
-
-```
-let there be i of atom
-i become 1
-litany for i no greater than 5
-    hail proclaim praying hail word_of praying i
+litany for i no greater than 10
     i become i plus 1
 ```
 
-### Loop control
-
+### Pattern matching
 ```
-forsake   -- break: exits the litany immediately
-ascend    -- continue: jumps to the next iteration
-```
-
----
-
-## Confess (try / catch / finally)
-
-```
-sin Problem
-    description of word
-
-confess
-    transgress Problem praying "something went wrong"
-answer for Problem as err
-    hail proclaim praying description from err
-absolve
-    hail proclaim praying "always runs"
-```
-
-- `confess` → try block
-- `answer for SinType` → catch (one clause per type)
-- `as name` → optional, binds the sin instance to a variable
-- `absolve` → finally (optional)
-
----
-
-## Discern (pattern matching)
-
-```
-covenant Status
-    Active
-    Inactive
-    Banned
-
-let there s of Status be Active
-
-discern s
-    as Active
-        hail proclaim praying "online"
-    as Inactive
-        hail proclaim praying "away"
-    otherwise
-        hail proclaim praying "banned"
-```
-
----
-
-## Built-in salms
-
-| Salm       | Description                              |
-|------------|------------------------------------------|
-| `proclaim` | print with newline                       |
-| `herald`   | print without newline                    |
-| `inquire`  | read a line from stdin → `word`          |
-| `atom_of`  | convert `word` → `atom`                 |
-| `word_of`  | convert any value → `word`              |
-
----
-
-## Full example
-
-```
-scripture Apostate
-    name  of word
-    age   of atom
-    heretic of dogma
-
-sin HeresyDetected
-    reason of word
-
-salm Apostate receiving name of word, age of atom, heretic of dogma reveals Apostate
-    reveal manifest Apostate praying name, age, heretic
-
-salm judge upon Apostate reveals void
-    whether heretic from its
-        transgress HeresyDetected praying name from its plus " is a heretic"
-    otherwise
-        hail proclaim praying name from its plus " is absolved"
-
-let there a of Apostate be hail Apostate praying "John", 33, blessed
-
-confess
-    hail judge upon a
-answer for HeresyDetected as err
-    hail proclaim praying reason from err
-absolve
-    hail proclaim praying "judgment concluded"
-
-amen
+discern result
+    as righteous bearing value
+        hail proclaim praying hail word_of praying value
+    as condemned bearing reason
+        hail proclaim praying reason
 ```
 
 ---
 
 ## Reserved words
 
-`testament` `revealing` `scripture` `sin` `covenant` `salm` `upon` `receiving` `reveals`
-`let` `there` `be` `of` `become` `hail` `praying` `reveal` `whether` `otherwise`
-`so` `litany` `for` `forsake` `ascend` `bearing` `confess` `answer` `absolve` `as` `transgress`
-`manifest` `from` `its` `discern` `amen` `negate` `remainder`
-`plus` `minus` `times` `over` `is` `not` `greater` `lesser`
-`than` `no` `blessed` `forsaken` `and` `void` `atom` `fractional` `word` `dogma`
+```
+testament  revealing  scripture  sin  covenant  salm  upon  receiving  reveals
+let  there  be  of  become  hail  praying  reveal  whether  otherwise  so
+litany  for  forsake  ascend  bearing  confess  answer  absolve  as  transgress
+manifest  from  its  discern  amen  negate  remainder  after  thus
+plus  minus  times  over  is  not  greater  lesser  than  no
+blessed  forsaken  and  void  atom  fractional  word  dogma
+grace  granted  absent  verdict  righteous  condemned
+```

@@ -1,6 +1,7 @@
 use crate::ast::{BinOp, HolyType, Literal};
 
 use super::builtins::builtin_sin;
+use super::generics::{default_grace, default_verdict};
 use super::{EvalResult, HolyError, Value, value_type_name};
 
 pub fn eval_literal(lit: &Literal) -> Value {
@@ -26,12 +27,15 @@ pub fn is_truthy(v: &Value) -> bool {
 
 pub fn default_value(ty: &HolyType) -> Value {
     match ty {
-        HolyType::Atom => Value::Int(0),
-        HolyType::Fractional => Value::Float(0.0),
-        HolyType::Word => Value::Str(String::new()),
-        HolyType::Dogma => Value::Bool(false),
-        HolyType::Void => Value::Void,
-        HolyType::Custom(_) => Value::Void,
+        HolyType::Atom            => Value::Int(0),
+        HolyType::Fractional      => Value::Float(0.0),
+        HolyType::Word            => Value::Str(String::new()),
+        HolyType::Dogma           => Value::Bool(false),
+        HolyType::Void            => Value::Void,
+        HolyType::Grace(_)        => default_grace(),
+        HolyType::Verdict(_, _)   => default_verdict(),
+        HolyType::Custom(_)       => Value::Void,
+        HolyType::Generic(_, _)   => Value::Void,
     }
 }
 

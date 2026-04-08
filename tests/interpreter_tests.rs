@@ -326,6 +326,90 @@ amen
     assert!(msg.contains("InvalidDiscern"), "got: {msg}");
 }
 
+// ── Built-in generics: grace and verdict ─────────────────────────
+
+#[test]
+fn grace_granted_holds_value() {
+    let i = run(r#"
+let there g of grace of atom be manifest granted of grace of atom praying 42
+let there out of atom be 0
+
+discern g
+    as granted bearing v
+        out become v
+    as absent
+        out become -1
+amen
+"#);
+    assert_eq!(get_int(&i, "out"), 42);
+}
+
+#[test]
+fn grace_absent_is_default() {
+    let i = run(r#"
+let there be g of grace of atom
+let there out of word be ""
+
+discern g
+    as granted bearing v
+        out become "has value"
+    as absent
+        out become "empty"
+amen
+"#);
+    assert_eq!(get_str(&i, "out"), "empty");
+}
+
+#[test]
+fn verdict_righteous_holds_value() {
+    let i = run(r#"
+let there r of verdict of atom, word be manifest righteous of verdict of atom, word praying 99
+let there out of atom be 0
+
+discern r
+    as righteous bearing v
+        out become v
+    as condemned bearing msg
+        out become 0
+amen
+"#);
+    assert_eq!(get_int(&i, "out"), 99);
+}
+
+#[test]
+fn verdict_condemned_holds_reason() {
+    let i = run(r#"
+let there r of verdict of atom, word be manifest condemned of verdict of atom, word praying "bad"
+let there out of word be ""
+
+discern r
+    as righteous bearing v
+        out become "ok"
+    as condemned bearing msg
+        out become msg
+amen
+"#);
+    assert_eq!(get_str(&i, "out"), "bad");
+}
+
+#[test]
+fn grace_granted_type_mismatch_is_error() {
+    let msg = run_err(r#"
+let there g of grace of atom be manifest granted of grace of atom praying "wrong"
+amen
+"#);
+    assert!(msg.contains("TypeError"), "got: {msg}");
+}
+
+#[test]
+fn verdict_condemned_type_mismatch_is_error() {
+    let msg = run_err(r#"
+let there r of verdict of atom, word be manifest condemned of verdict of atom, word praying 42
+amen
+"#);
+    assert!(msg.contains("TypeError"), "got: {msg}");
+}
+
 // ── Covenant data variants ────────────────────────────────────────
 
 #[test]

@@ -31,8 +31,9 @@ fn build_testament_tree(testament: &Testament) -> Tree<String> {
 
 fn build_top_decl_tree(decl: &TopDecl) -> Tree<String> {
     match decl {
-        TopDecl::Scripture { name, fields } => {
-            let mut tree = Tree::new(format!("[scripture] {}", name));
+        TopDecl::Scripture { name, type_params, fields } => {
+            let tp = if type_params.is_empty() { String::new() } else { format!(" of {}", type_params.join(", ")) };
+            let mut tree = Tree::new(format!("[scripture] {}{}", name, tp));
             for (field_name, field_ty) in fields {
                 tree.push(Tree::new(format!("{}: {}", field_name, type_str(field_ty))));
             }
@@ -45,8 +46,9 @@ fn build_top_decl_tree(decl: &TopDecl) -> Tree<String> {
             }
             tree
         }
-        TopDecl::Covenant { name, variants } => {
-            let mut tree = Tree::new(format!("[covenant] {}", name));
+        TopDecl::Covenant { name, type_params, variants } => {
+            let tp = if type_params.is_empty() { String::new() } else { format!(" of {}", type_params.join(", ")) };
+            let mut tree = Tree::new(format!("[covenant] {}{}", name, tp));
             for v in variants {
                 if v.fields.is_empty() {
                     tree.push(Tree::new(v.name.clone()));
@@ -60,25 +62,22 @@ fn build_top_decl_tree(decl: &TopDecl) -> Tree<String> {
             }
             tree
         }
-        TopDecl::Salm { name, params, ret_type, body } => {
+        TopDecl::Salm { name, type_params, params, ret_type, body } => {
+            let tp = if type_params.is_empty() { String::new() } else { format!(" of {}", type_params.join(", ")) };
             let mut tree = Tree::new(format!(
-                "[salm] {} ({}) -> {}",
-                name,
-                params_str(params),
-                type_str(ret_type)
+                "[salm] {}{} ({}) -> {}",
+                name, tp, params_str(params), type_str(ret_type)
             ));
             for stmt in body {
                 tree.push(build_stmt_tree(stmt));
             }
             tree
         }
-        TopDecl::MethodSalm { name, target_type, params, ret_type, body } => {
+        TopDecl::MethodSalm { name, type_params, target_type, params, ret_type, body } => {
+            let tp = if type_params.is_empty() { String::new() } else { format!(" of {}", type_params.join(", ")) };
             let mut tree = Tree::new(format!(
-                "[method salm] {} upon {} ({}) -> {}",
-                name,
-                target_type,
-                params_str(params),
-                type_str(ret_type)
+                "[method salm] {}{} upon {} ({}) -> {}",
+                name, tp, target_type, params_str(params), type_str(ret_type)
             ));
             for stmt in body {
                 tree.push(build_stmt_tree(stmt));
@@ -103,8 +102,11 @@ fn build_stmt_tree(stmt: &Stmt) -> Tree<String> {
             tree.push(build_expr_tree(val));
             tree
         }
-        Stmt::FnCallStmt { name, args } => {
-            let mut tree = Tree::new(format!("hail {} ({})", name, args.len()));
+        Stmt::FnCallStmt { name, type_args, args } => {
+            let ta = if type_args.is_empty() { String::new() } else {
+                format!("<{}>", type_args.iter().map(type_str).collect::<Vec<_>>().join(", "))
+            };
+            let mut tree = Tree::new(format!("hail {}{} ({})", name, ta, args.len()));
             for arg in args {
                 tree.push(build_expr_tree(arg));
             }
@@ -205,9 +207,10 @@ fn build_stmt_tree(stmt: &Stmt) -> Tree<String> {
             tree
         }
         Stmt::Discern { target, branches, otherwise } => {
+            let target_label = expr_label(target);
             let mut tree = Tree::new(format!(
                 "discern {} ({} branch{}{})",
-                target,
+                target_label,
                 branches.len(),
                 if branches.len() != 1 { "es" } else { "" },
                 if otherwise.is_some() { " + otherwise" } else { "" }
@@ -248,6 +251,15 @@ fn build_stmt_tree(stmt: &Stmt) -> Tree<String> {
     }
 }
 
+fn expr_label(expr: &Expr) -> String {
+    match expr {
+        Expr::Var(name) => name.clone(),
+        Expr::FieldAccess { field, object } => format!("{} from {}", field, expr_label(object)),
+        Expr::SelfFieldAccess { field } => format!("{} from its", field),
+        _ => "<expr>".into(),
+    }
+}
+
 fn build_expr_tree(expr: &Expr) -> Tree<String> {
     match expr {
         Expr::Lit(lit) => {
@@ -285,8 +297,11 @@ fn build_expr_tree(expr: &Expr) -> Tree<String> {
             tree.push(build_expr_tree(right));
             tree
         }
-        Expr::FnCall { name, args } => {
-            let mut tree = Tree::new(format!("hail {} ({})", name, args.len()));
+        Expr::FnCall { name, type_args, args } => {
+            let ta = if type_args.is_empty() { String::new() } else {
+                format!("<{}>", type_args.iter().map(type_str).collect::<Vec<_>>().join(", "))
+            };
+            let mut tree = Tree::new(format!("hail {}{} ({})", name, ta, args.len()));
             for arg in args {
                 tree.push(build_expr_tree(arg));
             }
@@ -306,6 +321,22 @@ fn build_expr_tree(expr: &Expr) -> Tree<String> {
             }
             tree
         }
+        Expr::ManifestVariant { variant, covenant, type_args, args } => {
+            let ta = if type_args.is_empty() { String::new() } else {
+                format!(" of {}", type_args.iter().map(type_str).collect::<Vec<_>>().join(", "))
+            };
+            let mut tree = Tree::new(format!("manifest {} of {}{} ({})", variant, covenant, ta, args.len()));
+            for arg in args {
+                tree.push(build_expr_tree(arg));
+            }
+            tree
+        }
+        Expr::TypedUnitVariant { variant, covenant, type_args } => {
+            let ta = if type_args.is_empty() { String::new() } else {
+                format!(" of {}", type_args.iter().map(type_str).collect::<Vec<_>>().join(", "))
+            };
+            Tree::new(format!("{} of {}{}", variant, covenant, ta))
+        }
         Expr::FieldAccess { field, object } => {
             let mut tree = Tree::new(format!("FieldAccess({})", field));
             tree.push(build_expr_tree(object));
@@ -319,12 +350,18 @@ fn build_expr_tree(expr: &Expr) -> Tree<String> {
 
 fn type_str(ty: &HolyType) -> String {
     match ty {
-        HolyType::Atom => "atom".into(),
-        HolyType::Fractional => "fractional".into(),
-        HolyType::Word => "word".into(),
-        HolyType::Dogma => "dogma".into(),
-        HolyType::Void => "void".into(),
-        HolyType::Custom(name) => name.clone(),
+        HolyType::Atom               => "atom".into(),
+        HolyType::Fractional         => "fractional".into(),
+        HolyType::Word               => "word".into(),
+        HolyType::Dogma              => "dogma".into(),
+        HolyType::Void               => "void".into(),
+        HolyType::Grace(inner)       => format!("grace of {}", type_str(inner)),
+        HolyType::Verdict(ok, err)   => format!("verdict of {}, {}", type_str(ok), type_str(err)),
+        HolyType::Custom(name)       => name.clone(),
+        HolyType::Generic(name, args) => {
+            let args_str = args.iter().map(type_str).collect::<Vec<_>>().join(", ");
+            format!("{} of {}", name, args_str)
+        }
     }
 }
 

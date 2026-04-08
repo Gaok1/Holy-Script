@@ -1,18 +1,56 @@
+scripture StackNode of T
+    value of T
+    next of grace of StackNode of T
 
-conv
+scripture Stack of T
+    top of grace of StackNode of T
+    size of atom
 
 
-scripture StackNode
-    val of atom
-    next of StackNode
+salm emptyStack of T reveals Stack of T
+    reveal manifest Stack praying absent of grace of StackNode of T and 0
 
-scripture Stack
-    head of StackNode
+salm push of T receiving s of Stack of T thus, val of T reveals Stack of T
+    let there node of StackNode of T be manifest StackNode praying val and top from s
+    reveal manifest Stack praying manifest granted of grace of StackNode of T praying node thus and size from s plus 1
 
-salm insert upon Stack receiving a of atom reveals void
-    whether  negate head from its 
-        transgress DivisionByZero praying "aaaaaaa"
+salm pop of T receiving s of Stack of T reveals verdict of Stack of T thus, word
+    discern top from s
+        as granted bearing node
+            let there newTop of grace of StackNode of T be next from node
+            let there newStack of Stack of T be manifest Stack praying newTop and size from s minus 1
+            reveal manifest righteous of verdict of Stack of T thus, word praying newStack
+        as absent
+            reveal manifest condemned of verdict of Stack of T thus, word praying "stack is empty"
 
-let there stack of Stack be manifest Stack praying 
+salm peek of T receiving s of Stack of T reveals verdict of T, word
+    discern top from s
+        as granted bearing node
+            reveal manifest righteous of verdict of T, word praying value from node
+        as absent
+            reveal manifest condemned of verdict of T, word praying "stack is empty"
+
+let there s of Stack of atom be hail emptyStack of atom
+
+s become hail push of atom praying s and 10
+s become hail push of atom praying s and 20
+s become hail push of atom praying s and 30
+
+let there peeked of verdict of atom, word be hail peek of atom praying s
+
+discern peeked
+    as righteous bearing value
+        hail proclaim praying hail word_of praying value
+    as condemned bearing reason
+        hail proclaim praying reason
+
+let there popped of verdict of Stack of atom thus, word be hail pop of atom praying s
+
+discern popped
+    as righteous bearing newStack
+        s become newStack
+        hail proclaim praying "popped successfully"
+    as condemned bearing reason
+        hail proclaim praying reason
 
 amen

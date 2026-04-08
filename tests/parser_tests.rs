@@ -81,7 +81,7 @@ fn parses_covenant() {
     let p = parse("covenant Dir\n    Left\n    Right\namen\n");
     assert!(matches!(
         p.top_decls.first(),
-        Some(TopDecl::Covenant { name, variants })
+        Some(TopDecl::Covenant { name, variants, .. })
             if name == "Dir"
             && variants.len() == 2
             && variants[0].name == "Left"

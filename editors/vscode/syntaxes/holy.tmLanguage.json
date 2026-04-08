@@ -6,12 +6,17 @@
     "patterns": [
         { "include": "#comment" },
         { "include": "#string" },
+        { "include": "#salm-method-generic-def" },
+        { "include": "#salm-generic-def" },
         { "include": "#salm-method-def" },
         { "include": "#salm-def" },
+        { "include": "#scripture-generic-def" },
         { "include": "#scripture-def" },
+        { "include": "#covenant-generic-def" },
         { "include": "#sin-def" },
         { "include": "#covenant-def" },
         { "include": "#hail-call" },
+        { "include": "#manifest-variant-call" },
         { "include": "#manifest-call" },
         { "include": "#testament-decl" },
         { "include": "#answer-for" },
@@ -22,6 +27,9 @@
         { "include": "#multiword-handler" },
         { "include": "#number" },
         { "include": "#boolean" },
+        { "include": "#builtin-covenant-type" },
+        { "include": "#builtin-covenant-variant" },
+        { "include": "#keyword-context-marker" },
         { "include": "#keyword-control" },
         { "include": "#keyword-control-loop" },
         { "include": "#keyword-control-bearing" },
@@ -55,6 +63,48 @@
             "match": "\\b(blessed|forsaken)\\b"
         },
 
+        "builtin-covenant-type": {
+            "comment": "Built-in generic covenant type keywords: grace (Option) and verdict (Result)",
+            "name": "support.type.holy",
+            "match": "\\b(grace|verdict)\\b"
+        },
+
+        "builtin-covenant-variant": {
+            "comment": "Built-in covenant variant keywords: granted/absent (grace) and righteous/condemned (verdict)",
+            "name": "support.constant.holy",
+            "match": "\\b(granted|absent|righteous|condemned)\\b"
+        },
+
+        "keyword-context-marker": {
+            "comment": "'after' opens a grouped sub-expression; 'thus' closes any open context (type arg, arg list, or grouping)",
+            "name": "keyword.control.grouping.holy",
+            "match": "\\b(after|thus)\\b"
+        },
+
+        "salm-method-generic-def": {
+            "comment": "salm name upon ScriptureType of T, E — method salm with type params",
+            "match": "\\b(salm)\\s+([a-zA-Z_]\\w*)\\s+(upon)\\s+([a-zA-Z_]\\w*)\\s+(of)\\s+([A-Z][A-Za-z_]*(?:\\s*,\\s*[A-Z][A-Za-z_]*)*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.function.holy" },
+                "2": { "name": "entity.name.function.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "entity.name.type.holy" },
+                "5": { "name": "keyword.other.holy" },
+                "6": { "name": "variable.type.parameter.holy" }
+            }
+        },
+
+        "salm-generic-def": {
+            "comment": "salm name of T, E — generic salm declaration; type params highlighted",
+            "match": "\\b(salm)\\s+([a-zA-Z_]\\w*)\\s+(of)\\s+([A-Z][A-Za-z_]*(?:\\s*,\\s*[A-Z][A-Za-z_]*)*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.function.holy" },
+                "2": { "name": "entity.name.function.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "variable.type.parameter.holy" }
+            }
+        },
+
         "salm-method-def": {
             "comment": "salm name upon ScriptureType",
             "match": "\\b(salm)\\s+([a-zA-Z_]\\w*)\\s+(upon)\\s+([a-zA-Z_]\\w*)",
@@ -75,11 +125,33 @@
             }
         },
 
+        "scripture-generic-def": {
+            "comment": "scripture Name of T, E — generic scripture with type params",
+            "match": "\\b(scripture)\\s+([a-zA-Z_]\\w*)\\s+(of)\\s+([A-Z][A-Za-z_]*(?:\\s*,\\s*[A-Z][A-Za-z_]*)*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.class.holy" },
+                "2": { "name": "entity.name.type.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "variable.type.parameter.holy" }
+            }
+        },
+
         "scripture-def": {
             "match": "\\b(scripture)\\s+([a-zA-Z_]\\w*)",
             "captures": {
                 "1": { "name": "keyword.declaration.class.holy" },
                 "2": { "name": "entity.name.type.holy" }
+            }
+        },
+
+        "covenant-generic-def": {
+            "comment": "covenant Name of T, E — generic covenant with type params",
+            "match": "\\b(covenant)\\s+([a-zA-Z_]\\w*)\\s+(of)\\s+([A-Z][A-Za-z_]*(?:\\s*,\\s*[A-Z][A-Za-z_]*)*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.class.holy" },
+                "2": { "name": "entity.name.type.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "variable.type.parameter.holy" }
             }
         },
 
@@ -100,6 +172,7 @@
         },
 
         "hail-call": {
+            "comment": "hail salmName — function/method call invocation",
             "match": "\\b(hail)\\s+([a-zA-Z_]\\w*)",
             "captures": {
                 "1": { "name": "keyword.other.invocation.holy" },
@@ -107,7 +180,19 @@
             }
         },
 
+        "manifest-variant-call": {
+            "comment": "manifest Variant of CovenantName — data variant instantiation",
+            "match": "\\b(manifest)\\s+([a-zA-Z_]\\w*)\\s+(of)\\s+([a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.other.invocation.holy" },
+                "2": { "name": "support.constant.holy" },
+                "3": { "name": "keyword.other.holy" },
+                "4": { "name": "entity.name.type.holy" }
+            }
+        },
+
         "manifest-call": {
+            "comment": "manifest ScriptureName — scripture instantiation",
             "match": "\\b(manifest)\\s+([a-zA-Z_]\\w*)",
             "captures": {
                 "1": { "name": "keyword.other.invocation.holy" },
@@ -142,7 +227,7 @@
         },
 
         "multiword-cmp": {
-            "comment": "Operadores de comparação multi-palavra — ordem importa",
+            "comment": "Multi-word comparison operators — order matters",
             "patterns": [
                 {
                     "name": "keyword.operator.comparison.holy",
@@ -198,7 +283,7 @@
         },
 
         "field-access": {
-            "comment": "field from obj (from obj)* — highlights each field name as a variable and from/its as keywords",
+            "comment": "field from obj — highlights field name and from/its as keywords",
             "match": "\\b([a-zA-Z_]\\w*)\\s+(from)\\s+(?:([a-zA-Z_]\\w*)|\\b(its)\\b)",
             "captures": {
                 "1": { "name": "variable.other.holy" },
@@ -214,13 +299,13 @@
         },
 
         "keyword-control-loop": {
-            "comment": "Loop control: forsake = break, ascend = continue (inside litany for)",
+            "comment": "Loop control: forsake = break, ascend = continue",
             "name": "keyword.control.flow.holy",
             "match": "\\b(forsake|ascend)\\b"
         },
 
         "keyword-control-bearing": {
-            "comment": "bearing: binds covenant variant fields in a discern branch",
+            "comment": "bearing — binds covenant variant fields in a discern branch",
             "name": "keyword.control.holy",
             "match": "\\bbearing\\b"
         },
@@ -246,8 +331,8 @@
         },
 
         "of-type": {
-            "comment": "of <CustomType> — highlights custom scripture/sin type names after 'of'; built-ins are caught by storage-type",
-            "match": "\\b(of)\\s+(?!atom|fractional|word|dogma|void\\b)([a-zA-Z_]\\w*)",
+            "comment": "of <CustomType> — highlights custom type names; excludes primitives, builtins, and context markers",
+            "match": "\\b(of)\\s+(?!atom\\b|fractional\\b|word\\b|dogma\\b|void\\b|grace\\b|verdict\\b|after\\b|thus\\b)([a-zA-Z_]\\w*)",
             "captures": {
                 "1": { "name": "keyword.other.holy" },
                 "2": { "name": "entity.name.type.holy" }

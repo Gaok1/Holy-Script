@@ -6,7 +6,12 @@ pub enum HolyType {
     Word,           // String
     Dogma,          // bool: blessed (true) | forsaken (false)
     Void,
-    Custom(String), // user-defined scripture or covenant
+    /// `grace of T`  — built-in Option: granted(T) | absent
+    Grace(Box<HolyType>),
+    /// `verdict of T, E`  — built-in Result: righteous(T) | condemned(E)
+    Verdict(Box<HolyType>, Box<HolyType>),
+    Custom(String),                    // user-defined, no type args
+    Generic(String, Vec<HolyType>),    // user-defined with type args: e.g. Pair of atom, word
 }
 
 /// Literal values.
@@ -33,12 +38,26 @@ pub enum Expr {
     /// `negate <expr>`  →  unary minus
     Negate(Box<Expr>),
     BinOp { op: BinOp, left: Box<Expr>, right: Box<Expr> },
-    /// `hail salm (praying args)?`
-    FnCall { name: String, args: Vec<Expr> },
+    /// `hail salm (of type_args)? (praying args)?`
+    FnCall { name: String, type_args: Vec<HolyType>, args: Vec<Expr> },
     /// `hail method upon target (praying args)?`
     MethodCall { method: String, target: String, args: Vec<Expr> },
     /// `manifest Scripture (praying args)?`
     Manifest { scripture: String, args: Vec<Expr> },
+    /// `manifest variant of covenant (of type_args)? (praying args)?`
+    /// — data variant with explicit covenant + optional type args
+    ManifestVariant {
+        variant:   String,
+        covenant:  String,
+        type_args: Vec<HolyType>,
+        args:      Vec<Expr>,
+    },
+    /// `variant of covenant (of type_args)?`  — unit variant with explicit covenant
+    TypedUnitVariant {
+        variant:   String,
+        covenant:  String,
+        type_args: Vec<HolyType>,
+    },
     /// `field from <expr>`  — supports chaining: `b from fieldComposite from its`
     FieldAccess { field: String, object: Box<Expr> },
     /// `field from its`  — inside a method_salm (leaf of a from-chain)
@@ -77,8 +96,8 @@ pub enum Stmt {
     DeclVal   { name: String, ty: HolyType, val: Expr },
     /// `x become expr`
     Assign    { name: String, val: Expr },
-    /// `hail salm (praying args)?`  as a statement
-    FnCallStmt     { name: String, args: Vec<Expr> },
+    /// `hail salm (of type_args)? (praying args)?`  as a statement
+    FnCallStmt     { name: String, type_args: Vec<HolyType>, args: Vec<Expr> },
     /// `hail method upon target (praying args)?`  as a statement
     MethodCallStmt { method: String, target: String, args: Vec<Expr> },
     /// `reveal expr`  — return value from a salm
@@ -100,9 +119,9 @@ pub enum Stmt {
         handlers:  Vec<SinHandler>,
         absolve:   Option<Vec<Stmt>>,
     },
-    /// `discern x  as Variant (bearing b1, b2)? ...`  — pattern match on a covenant variant
+    /// `discern <expr>  as Variant (bearing b1, b2)? ...`  — pattern match on a covenant variant
     Discern {
-        target:    String,
+        target:    Expr,
         branches:  Vec<DiscernBranch>,
         otherwise: Option<Vec<Stmt>>,
     },
@@ -115,15 +134,17 @@ pub enum Stmt {
 pub enum TopDecl {
     /// Regular function.
     Salm {
-        name:     String,
-        params:   Vec<(String, HolyType)>,
-        ret_type: HolyType,
-        body:     Vec<Stmt>,
+        name:        String,
+        type_params: Vec<String>,
+        params:      Vec<(String, HolyType)>,
+        ret_type:    HolyType,
+        body:        Vec<Stmt>,
     },
     /// Method bound to a scripture type (`upon`).
     /// `its` is available inside the body as a reference to the instance.
     MethodSalm {
         name:        String,
+        type_params: Vec<String>,
         target_type: String,
         params:      Vec<(String, HolyType)>,
         ret_type:    HolyType,
@@ -131,8 +152,9 @@ pub enum TopDecl {
     },
     /// Pure data structure (no behaviour).
     Scripture {
-        name:   String,
-        fields: Vec<(String, HolyType)>,
+        name:        String,
+        type_params: Vec<String>,
+        fields:      Vec<(String, HolyType)>,
     },
     /// Throwable/catchable error type.
     SinDecl {
@@ -141,8 +163,9 @@ pub enum TopDecl {
     },
     /// Sum type with named variants; each variant may carry named fields.
     Covenant {
-        name:     String,
-        variants: Vec<CovenantVariantDecl>,
+        name:        String,
+        type_params: Vec<String>,
+        variants:    Vec<CovenantVariantDecl>,
     },
 }
 

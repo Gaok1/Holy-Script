@@ -1,6 +1,7 @@
 mod builtins;
 mod env;
 mod errors;
+mod generics;
 mod ops;
 mod value;
 
@@ -10,6 +11,7 @@ use std::io::{self, BufRead, Write};
 use crate::ast::*;
 
 use self::builtins::{builtin_sin, builtin_sins};
+use self::generics::{builtin_covenants, make_granted, make_verdict_variant};
 use self::env::Env;
 pub use self::errors::HolyError;
 use self::ops::{default_value, eval_binop, eval_literal, get_field, is_truthy};
@@ -20,9 +22,10 @@ type ExecResult = Result<(), HolyError>;
 
 #[derive(Clone)]
 struct SalmDef {
-    params: Vec<(String, HolyType)>,
-    ret_type: HolyType,
-    body:   Vec<Stmt>,
+    type_params: Vec<String>,
+    params:      Vec<(String, HolyType)>,
+    ret_type:    HolyType,
+    body:        Vec<Stmt>,
 }
 
 pub struct Interpreter {
@@ -38,14 +41,15 @@ pub struct Interpreter {
 
 impl Interpreter {
     pub fn new() -> Self {
+        let (builtin_cov, builtin_cov_variants) = builtin_covenants();
         Interpreter {
             env:               Env::new(),
             salms:             HashMap::new(),
             methods:           HashMap::new(),
             scriptures:        HashMap::new(),
             sins:              builtin_sins(),
-            covenants:         HashMap::new(),
-            covenant_variants: HashMap::new(),
+            covenants:         builtin_cov,
+            covenant_variants: builtin_cov_variants,
         }
     }
 
@@ -63,27 +67,29 @@ impl Interpreter {
 
     fn register_top_decl(&mut self, decl: &TopDecl) {
         match decl {
-            TopDecl::Salm { name, params, ret_type, body } => {
+            TopDecl::Salm { name, type_params, params, ret_type, body } => {
                 self.salms.insert(name.clone(), SalmDef {
+                    type_params: type_params.clone(),
                     params: params.clone(),
                     ret_type: ret_type.clone(),
                     body: body.clone(),
                 });
             }
-            TopDecl::MethodSalm { name, target_type, params, ret_type, body } => {
+            TopDecl::MethodSalm { name, type_params, target_type, params, ret_type, body } => {
                 self.methods.insert((name.clone(), target_type.clone()), SalmDef {
+                    type_params: type_params.clone(),
                     params: params.clone(),
                     ret_type: ret_type.clone(),
                     body: body.clone(),
                 });
             }
-            TopDecl::Scripture { name, fields } => {
+            TopDecl::Scripture { name, fields, .. } => {
                 self.scriptures.insert(name.clone(), fields.clone());
             }
             TopDecl::SinDecl { name, fields } => {
                 self.sins.insert(name.clone(), fields.clone());
             }
-            TopDecl::Covenant { name, variants } => {
+            TopDecl::Covenant { name, variants, .. } => {
                 self.covenants.insert(name.clone(), variants.clone());
                 for v in variants {
                     self.covenant_variants.insert(
@@ -125,7 +131,7 @@ impl Interpreter {
                     self.env.define(name, inferred_ty, v);
                 }
             }
-            Stmt::FnCallStmt { name, args } => {
+            Stmt::FnCallStmt { name, args, .. } => {
                 let vals = self.eval_args(args)?;
                 self.call_salm(name, vals)?;
             }
@@ -244,28 +250,33 @@ impl Interpreter {
     fn validate_declared_types(&self, program: &Program) -> Result<(), HolyError> {
         for decl in &program.top_decls {
             match decl {
-                TopDecl::Salm { params, ret_type, .. } => {
+                TopDecl::Salm { params, ret_type, type_params, .. } => {
                     for (_, ty) in params {
-                        self.ensure_type_exists(ty)?;
+                        self.ensure_type_exists_with_params(ty, type_params)?;
                     }
-                    self.ensure_type_exists(ret_type)?;
+                    self.ensure_type_exists_with_params(ret_type, type_params)?;
                 }
-                TopDecl::MethodSalm { target_type, params, ret_type, .. } => {
+                TopDecl::MethodSalm { target_type, params, ret_type, type_params, .. } => {
                     self.ensure_custom_type_exists(target_type)?;
                     for (_, ty) in params {
-                        self.ensure_type_exists(ty)?;
+                        self.ensure_type_exists_with_params(ty, type_params)?;
                     }
-                    self.ensure_type_exists(ret_type)?;
+                    self.ensure_type_exists_with_params(ret_type, type_params)?;
                 }
-                TopDecl::Scripture { fields, .. } | TopDecl::SinDecl { fields, .. } => {
+                TopDecl::Scripture { fields, type_params, .. } => {
+                    for (_, ty) in fields {
+                        self.ensure_type_exists_with_params(ty, type_params)?;
+                    }
+                }
+                TopDecl::SinDecl { fields, .. } => {
                     for (_, ty) in fields {
                         self.ensure_type_exists(ty)?;
                     }
                 }
-                TopDecl::Covenant { variants, .. } => {
+                TopDecl::Covenant { variants, type_params, .. } => {
                     for v in variants {
                         for (_, ty) in &v.fields {
-                            self.ensure_type_exists(ty)?;
+                            self.ensure_type_exists_with_params(ty, type_params)?;
                         }
                     }
                 }
@@ -276,11 +287,11 @@ impl Interpreter {
 
     fn exec_discern(
         &mut self,
-        target: &str,
+        target: &Expr,
         branches: &[DiscernBranch],
         otherwise: &Option<Vec<Stmt>>,
     ) -> ExecResult {
-        let target_value = self.lookup_var(target)?;
+        let target_value = self.eval_expr(target)?;
 
         let (matched_variant, variant_fields) = match target_value {
             Value::CovenantVariant { variant, fields, .. } => (variant, fields),
@@ -288,8 +299,7 @@ impl Interpreter {
                 return Err(builtin_sin(
                     "InvalidDiscern",
                     format!(
-                        "'discern' expects a covenant variant in '{}', got {}",
-                        target,
+                        "'discern' expects a covenant variant, got {}",
                         value_type_name(&other)
                     ),
                 ));
@@ -405,7 +415,10 @@ impl Interpreter {
             self.env.define("its", self_ty, val);
         }
         for ((pname, pty), val) in def.params.iter().zip(args) {
-            self.expect_type(pty, &val, &format!("invalid argument for parameter '{}'", pname))?;
+            // Skip type check if the param type is an abstract type parameter
+            if !self.is_abstract_type(pty, &def.type_params) {
+                self.expect_type(pty, &val, &format!("invalid argument for parameter '{}'", pname))?;
+            }
             self.env.define(pname, pty.clone(), val);
         }
         let result = self.exec_stmts(&def.body);
@@ -414,14 +427,53 @@ impl Interpreter {
         match result {
             Ok(()) => {
                 let value = Value::Void;
-                self.expect_type(&def.ret_type, &value, "invalid salm return")?;
+                if !self.is_abstract_type(&def.ret_type, &def.type_params) {
+                    self.expect_type(&def.ret_type, &value, "invalid salm return")?;
+                }
                 Ok(value)
             }
             Err(HolyError::Return(v)) => {
-                self.expect_type(&def.ret_type, &v, "invalid salm return")?;
+                if !self.is_abstract_type(&def.ret_type, &def.type_params) {
+                    self.expect_type(&def.ret_type, &v, "invalid salm return")?;
+                }
                 Ok(v)
             }
             Err(e) => Err(e),
+        }
+    }
+
+    /// Returns true if `ty` refers to a fully concrete, registered type (not an abstract param).
+    /// Primitives and built-in covenants are always concrete.
+    /// `Custom("T")` where "T" is not a registered scripture/covenant is an abstract param.
+    fn is_concrete_type(&self, ty: &HolyType) -> bool {
+        match ty {
+            HolyType::Custom(name) => {
+                self.scriptures.contains_key(name) || self.covenants.contains_key(name)
+            }
+            HolyType::Generic(name, args) => {
+                (self.scriptures.contains_key(name) || self.covenants.contains_key(name))
+                    && args.iter().all(|a| self.is_concrete_type(a))
+            }
+            HolyType::Grace(inner) => self.is_concrete_type(inner),
+            HolyType::Verdict(ok, err) => {
+                self.is_concrete_type(ok) && self.is_concrete_type(err)
+            }
+            _ => true, // Atom, Fractional, Word, Dogma, Void are always concrete
+        }
+    }
+
+    /// Returns true if `ty` contains any abstract type parameter from `type_params`.
+    /// Used to skip runtime type checks for generic salms.
+    fn is_abstract_type(&self, ty: &HolyType, type_params: &[String]) -> bool {
+        if type_params.is_empty() { return false; }
+        match ty {
+            HolyType::Custom(name) => type_params.contains(name),
+            HolyType::Generic(_, args) => args.iter().any(|a| self.is_abstract_type(a, type_params)),
+            HolyType::Grace(inner) => self.is_abstract_type(inner, type_params),
+            HolyType::Verdict(ok, err) => {
+                self.is_abstract_type(ok, type_params) || self.is_abstract_type(err, type_params)
+            }
+            _ => false,
         }
     }
 
@@ -470,7 +522,7 @@ impl Interpreter {
                 eval_binop(op, lv, rv)
             }
 
-            Expr::FnCall { name, args } => {
+            Expr::FnCall { name, args, .. } => {
                 let vals = self.eval_args(args)?;
                 self.call_salm(name, vals)
             }
@@ -523,10 +575,20 @@ impl Interpreter {
                 let mut fields = HashMap::new();
                 for ((fname, field_ty), arg) in def.iter().zip(args.iter()) {
                     let v = self.eval_expr(arg)?;
-                    self.expect_type(field_ty, &v, &format!("invalid value for field '{}.{}'", scripture, fname))?;
+                    if self.is_concrete_type(field_ty) {
+                        self.expect_type(field_ty, &v, &format!("invalid value for field '{}.{}'", scripture, fname))?;
+                    }
                     fields.insert(fname.clone(), v);
                 }
                 Ok(Value::Scripture { type_name: scripture.clone(), fields })
+            }
+
+            Expr::ManifestVariant { variant, covenant, type_args, args } => {
+                self.eval_manifest_variant(variant, covenant, type_args, args)
+            }
+
+            Expr::TypedUnitVariant { variant, covenant, type_args } => {
+                self.eval_typed_unit_variant(variant, covenant, type_args)
             }
 
             Expr::FieldAccess { field, object } => {
@@ -539,6 +601,127 @@ impl Interpreter {
                     .ok_or_else(|| builtin_sin("InvalidContext", "'its' is not available outside a method_salm"))?;
                 get_field(&its, field)
             }
+        }
+    }
+
+    fn eval_manifest_variant(
+        &mut self,
+        variant: &str,
+        covenant: &str,
+        type_args: &[HolyType],
+        args: &[Expr],
+    ) -> EvalResult {
+        // Validate the covenant exists
+        if !self.covenants.contains_key(covenant) {
+            return Err(builtin_sin("UndefinedType", format!("covenant '{}' is not declared", covenant)));
+        }
+        // Validate the variant belongs to this covenant
+        match self.covenant_variants.get(variant) {
+            Some((cov, _)) if cov != covenant => {
+                return Err(builtin_sin(
+                    "InvalidDiscern",
+                    format!("variant '{}' does not belong to covenant '{}'", variant, covenant),
+                ));
+            }
+            None => {
+                return Err(builtin_sin("UndefinedVariable", format!("variant '{}' is not defined", variant)));
+            }
+            _ => {}
+        }
+
+        match covenant {
+            "grace" => {
+                // granted expects exactly 1 arg typed by type_args[0]
+                if variant != "granted" {
+                    return Err(builtin_sin("TypeError",
+                        format!("'{}' is a unit variant of grace — use it without 'manifest'", variant)));
+                }
+                if args.len() != 1 {
+                    return Err(builtin_sin("InvalidArgumentCount",
+                        "grace::granted expects exactly 1 argument"));
+                }
+                let val = self.eval_expr(&args[0])?;
+                match type_args.first() {
+                    Some(ty) if self.is_concrete_type(ty) => {
+                        make_granted(ty, val, |ty, v| self.value_matches_type(ty, v))
+                    }
+                    _ => {
+                        // No type arg, or type arg is abstract — accept without type check
+                        Ok(Value::CovenantVariant { covenant: "grace".into(), variant: "granted".into(), fields: vec![val] })
+                    }
+                }
+            }
+            "verdict" => {
+                if args.len() != 1 {
+                    return Err(builtin_sin("InvalidArgumentCount",
+                        format!("verdict::{} expects exactly 1 argument", variant)));
+                }
+                let val = self.eval_expr(&args[0])?;
+                let field_ty = match variant {
+                    "righteous" => type_args.get(0),
+                    "condemned" => type_args.get(1),
+                    _ => return Err(builtin_sin("TypeError",
+                        format!("'{}' is not a variant of verdict", variant))),
+                };
+                match field_ty {
+                    Some(ty) if self.is_concrete_type(ty) => {
+                        make_verdict_variant(variant, ty, val, |ty, v| self.value_matches_type(ty, v))
+                    }
+                    _ => {
+                        // No type arg, or type arg is abstract — accept without type check
+                        Ok(Value::CovenantVariant { covenant: "verdict".into(), variant: variant.into(), fields: vec![val] })
+                    }
+                }
+            }
+            _ => {
+                // User-defined generic covenant — use existing ManifestVariant path (no type arg enforcement)
+                let (_, field_defs) = self.covenant_variants.get(variant)
+                    .ok_or_else(|| builtin_sin("UndefinedVariable", format!("variant '{}' is not defined", variant)))?
+                    .clone();
+                if args.len() != field_defs.len() {
+                    return Err(builtin_sin("InvalidArgumentCount",
+                        format!("variant '{}' expects {} field(s), got {}", variant, field_defs.len(), args.len())));
+                }
+                let mut values = Vec::new();
+                for ((fname, field_ty), arg) in field_defs.iter().zip(args.iter()) {
+                    let v = self.eval_expr(arg)?;
+                    // Skip type check if field type is a type param (Custom type not registered)
+                    if !matches!(field_ty, HolyType::Custom(n) if !self.scriptures.contains_key(n) && !self.covenants.contains_key(n)) {
+                        self.expect_type(field_ty, &v, &format!("invalid value for variant field '{}.{}'", variant, fname))?;
+                    }
+                    values.push(v);
+                }
+                Ok(Value::CovenantVariant { covenant: covenant.into(), variant: variant.into(), fields: values })
+            }
+        }
+    }
+
+    fn eval_typed_unit_variant(
+        &mut self,
+        variant: &str,
+        covenant: &str,
+        _type_args: &[HolyType],
+    ) -> EvalResult {
+        if !self.covenants.contains_key(covenant) {
+            return Err(builtin_sin("UndefinedType", format!("covenant '{}' is not declared", covenant)));
+        }
+        match self.covenant_variants.get(variant) {
+            Some((cov, fields)) if cov == covenant && fields.is_empty() => {
+                Ok(Value::CovenantVariant {
+                    covenant: covenant.into(),
+                    variant:  variant.into(),
+                    fields:   vec![],
+                })
+            }
+            Some((cov, _)) if cov != covenant => Err(builtin_sin(
+                "InvalidDiscern",
+                format!("variant '{}' does not belong to covenant '{}'", variant, covenant),
+            )),
+            Some((_, fields)) if !fields.is_empty() => Err(builtin_sin(
+                "InvalidArgumentCount",
+                format!("variant '{}' carries data — use 'manifest {} of {}' to instantiate it", variant, variant, covenant),
+            )),
+            _ => Err(builtin_sin("UndefinedVariable", format!("variant '{}' is not defined", variant))),
         }
     }
 
@@ -574,8 +757,55 @@ impl Interpreter {
     }
 
     fn ensure_type_exists(&self, ty: &HolyType) -> Result<(), HolyError> {
-        if let HolyType::Custom(name) = ty {
-            self.ensure_custom_type_exists(name)?;
+        // At runtime, unregistered Custom names are treated as abstract type params
+        // (validate_declared_types already ran the strict check with the correct param lists).
+        self.ensure_type_exists_lenient(ty)
+    }
+
+    fn ensure_type_exists_lenient(&self, ty: &HolyType) -> Result<(), HolyError> {
+        match ty {
+            HolyType::Custom(name) => {
+                // Allow unregistered names — they are abstract type params in generic contexts
+                let _ = name;
+                Ok(())
+            }
+            HolyType::Generic(name, args) => {
+                self.ensure_custom_type_exists(name)?;
+                for arg in args {
+                    self.ensure_type_exists_lenient(arg)?;
+                }
+                Ok(())
+            }
+            HolyType::Grace(inner) => self.ensure_type_exists_lenient(inner),
+            HolyType::Verdict(ok_ty, err_ty) => {
+                self.ensure_type_exists_lenient(ok_ty)?;
+                self.ensure_type_exists_lenient(err_ty)
+            }
+            _ => Ok(()),
+        }
+    }
+
+    fn ensure_type_exists_with_params(&self, ty: &HolyType, type_params: &[String]) -> Result<(), HolyError> {
+        match ty {
+            HolyType::Custom(name) => {
+                if !type_params.contains(name) {
+                    self.ensure_custom_type_exists(name)?;
+                }
+            }
+            HolyType::Generic(name, args) => {
+                self.ensure_custom_type_exists(name)?;
+                for arg in args {
+                    self.ensure_type_exists_with_params(arg, type_params)?;
+                }
+            }
+            HolyType::Grace(inner) => {
+                self.ensure_type_exists_with_params(inner, type_params)?;
+            }
+            HolyType::Verdict(ok_ty, err_ty) => {
+                self.ensure_type_exists_with_params(ok_ty, type_params)?;
+                self.ensure_type_exists_with_params(err_ty, type_params)?;
+            }
+            _ => {}
         }
         Ok(())
     }
@@ -601,13 +831,38 @@ impl Interpreter {
 
     fn value_matches_type(&self, ty: &HolyType, value: &Value) -> bool {
         match ty {
-            HolyType::Atom => matches!(value, Value::Int(_)),
-            HolyType::Fractional => matches!(value, Value::Float(_)),
-            HolyType::Word => matches!(value, Value::Str(_)),
-            HolyType::Dogma => matches!(value, Value::Bool(_)),
-            HolyType::Void => matches!(value, Value::Void),
+            HolyType::Atom        => matches!(value, Value::Int(_)),
+            HolyType::Fractional  => matches!(value, Value::Float(_)),
+            HolyType::Word        => matches!(value, Value::Str(_)),
+            HolyType::Dogma       => matches!(value, Value::Bool(_)),
+            HolyType::Void        => matches!(value, Value::Void),
+            HolyType::Grace(inner) => match value {
+                Value::CovenantVariant { covenant, variant, fields } if covenant == "grace" => {
+                    match variant.as_str() {
+                        "granted" => fields.len() == 1 && self.value_matches_type(inner, &fields[0]),
+                        "absent"  => fields.is_empty(),
+                        _ => false,
+                    }
+                }
+                _ => false,
+            },
+            HolyType::Verdict(ok_ty, err_ty) => match value {
+                Value::CovenantVariant { covenant, variant, fields } if covenant == "verdict" => {
+                    match variant.as_str() {
+                        "righteous" => fields.len() == 1 && self.value_matches_type(ok_ty, &fields[0]),
+                        "condemned" => fields.len() == 1 && self.value_matches_type(err_ty, &fields[0]),
+                        _ => false,
+                    }
+                }
+                _ => false,
+            },
             HolyType::Custom(name) => match value {
-                Value::Scripture { type_name, .. } => type_name == name,
+                Value::Scripture { type_name, .. }    => type_name == name,
+                Value::CovenantVariant { covenant, .. } => covenant == name,
+                _ => false,
+            },
+            HolyType::Generic(name, _) => match value {
+                Value::Scripture { type_name, .. }    => type_name == name,
                 Value::CovenantVariant { covenant, .. } => covenant == name,
                 _ => false,
             },
@@ -628,12 +883,18 @@ impl Interpreter {
 
     fn describe_type(&self, ty: &HolyType) -> String {
         match ty {
-            HolyType::Atom => "atom".into(),
-            HolyType::Fractional => "fractional".into(),
-            HolyType::Word => "word".into(),
-            HolyType::Dogma => "dogma".into(),
-            HolyType::Void => "void".into(),
-            HolyType::Custom(name) => name.clone(),
+            HolyType::Atom          => "atom".into(),
+            HolyType::Fractional    => "fractional".into(),
+            HolyType::Word          => "word".into(),
+            HolyType::Dogma         => "dogma".into(),
+            HolyType::Void          => "void".into(),
+            HolyType::Grace(inner)  => format!("grace of {}", self.describe_type(inner)),
+            HolyType::Verdict(ok, err) => format!("verdict of {}, {}", self.describe_type(ok), self.describe_type(err)),
+            HolyType::Custom(name)  => name.clone(),
+            HolyType::Generic(name, args) => {
+                let args_str = args.iter().map(|a| self.describe_type(a)).collect::<Vec<_>>().join(", ");
+                format!("{} of {}", name, args_str)
+            }
         }
     }
 

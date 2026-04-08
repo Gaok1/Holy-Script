@@ -39,7 +39,7 @@ covenant    ::= "covenant" ident ("of" type_param_list)? INDENT variant+ DEDENT
 -- a variant with an indented field block carries data; without one it is a unit variant
 variant     ::= ident (INDENT field+ DEDENT)?
 
--- one or more type parameter names
+-- one or more type parameter names (abstract — resolved at instantiation)
 type_param_list ::= ident ("," ident)*
 
 
@@ -79,8 +79,8 @@ decl        ::= "let there be" ident "of" type
 assign      ::= ident "become" expr
 
 -- invocation as a statement
-invocation  ::= "hail" ident "upon" ident ("praying" arg_list)?                    -- method_salm
-            |   "hail" ident ("of" type ("," type)*)? ("praying" arg_list)?        -- regular salm, optionally generic
+invocation  ::= "hail" ident "upon" ident ("praying" arg_list "thus"?)?        -- method_salm
+            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm
 
 -- return value from a salm
 reveal_stmt ::= "reveal" expr
@@ -131,7 +131,7 @@ discern     ::= "discern" ident INDENT
 --   comparison < addition/subtraction < multiplication/division/remainder < negation < atoms
 --
 --   comparisons do not chain: (a > b > c) is invalid
---   no implicit grouping — use intermediate variables to reorder evaluation
+--   use "after expr thus" to override evaluation order explicitly
 
 expr        ::= cmp_expr
 
@@ -144,15 +144,16 @@ term        ::= unary (("times" | "over" | "remainder") unary)*
 -- unary negation — "negate x" is equivalent to -x
 unary       ::= "negate" atom | atom
 
-atom        ::= "hail" ident "upon" ident ("praying" arg_list)?                    -- method_salm call
-            |   "hail" ident ("of" type ("," type)*)? ("praying" arg_list)?        -- regular or generic salm call
-            |   "manifest" ident "of" ident ("of" type ("," type)*)? ("praying" arg_list)?  -- instantiate a data variant: manifest some of Option of atom praying 42
-            |   "manifest" ident ("praying" arg_list)?                             -- instantiate a scripture
-            |   ident "of" ident ("of" type ("," type)*)?                          -- unit variant: none of Option of atom
-            |   ident "from" ident                                                 -- field access on a variable
-            |   ident "from" "its"                                                 -- field access inside method_salm
+atom        ::= "after" expr "thus"                                              -- explicit grouping: (expr)
+            |   "hail" ident "upon" ident ("praying" arg_list "thus"?)?          -- method_salm call
+            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm call
+            |   "manifest" ident "of" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- data variant: manifest some of Option of atom praying 42
+            |   "manifest" ident ("praying" arg_list "thus"?)?                   -- scripture instantiation
+            |   ident "of" ident ("of" type_arg_list)?                           -- unit variant: none of Option of atom
+            |   ident "from" ident                                               -- field access on a variable
+            |   ident "from" "its"                                               -- field access inside method_salm
             |   literal
-            |   ident                                                              -- variable
+            |   ident                                                            -- variable
 
 cmp_op      ::= "is"
             |   "is not"
@@ -162,19 +163,30 @@ cmp_op      ::= "is"
             |   "no lesser than"
 
 -- the final argument may use "and" instead of a comma
+-- "thus" after the last arg closes this call and returns to the enclosing arg_list
 arg_list    ::= expr ("," expr)* ("and" expr)?
 
 
 -- TYPES
--- generic types are applied with "of": grace of atom, verdict of atom, word
-type        ::= "atom"                                    -- int (i64)
-            |   "fractional"                              -- float (f64)
-            |   "word"                                    -- string
-            |   "dogma"                                   -- bool (blessed | forsaken)
+-- "thus" closes a generic type arg when the next token would be ambiguous
+-- example: Stack of Node of T thus   →   Stack<Node<T>>
+-- example: verdict of Stack of T thus, word  →  verdict<Stack<T>, word>
+type        ::= "atom"                                -- int (i64)
+            |   "fractional"                          -- float (f64)
+            |   "word"                                -- string
+            |   "dogma"                               -- bool (blessed | forsaken)
             |   "void"
-            |   "grace" "of" type                        -- built-in Option: granted | absent
-            |   "verdict" "of" type "," type             -- built-in Result: righteous | condemned
-            |   ident ("of" type ("," type)*)?           -- user-defined scripture or covenant, optionally generic
+            |   "grace" "of" type                    -- built-in Option: granted | absent
+            |   "verdict" "of" type "," type         -- built-in Result: righteous | condemned
+            |   ident ("of" type_arg_list)?           -- user-defined scripture or covenant, optionally generic
+
+-- comma-separated concrete type arguments, each closed by "thus" when nested
+type_arg_list ::= type_arg ("," type_arg)*
+type_arg      ::= type "thus"?
+                -- "thus" is required when the type is itself generic and the
+                -- next token would otherwise be consumed as another type arg
+                -- example: Stack of Node of T thus, word
+                --          └─ thus closes "Node of T", not "Stack of ..."
 
 
 -- LITERALS
@@ -191,12 +203,32 @@ ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
 
 
 -- ============================================================
+--  "thus" — UNIFIED CLOSING MARKER
+-- ============================================================
+-- "thus" serves as a stack-pop signal in three contexts:
+--
+--   1. TYPE ARG    — closes a nested generic type, returns to the enclosing type
+--                    Stack of Node of T thus
+--
+--   2. ARG LIST    — closes the arg_list of the current hail/manifest call,
+--                    returns to the enclosing arg_list
+--                    hail a praying hail b praying 1 thus and 2
+--                    → a(b(1), 2)
+--
+--   3. GROUPING    — "after expr thus" forces evaluation of expr as a unit
+--                    after 3 times 5 thus   →   (3 * 5)
+--
+-- The parser maintains a context stack. Each "thus" pops exactly one level.
+-- Unbalanced "thus" (more closes than opens) is a syntax error.
+
+
+-- ============================================================
 --  RESERVED WORDS
 -- ============================================================
 -- testament  revealing  scripture  sin  covenant  salm  upon  receiving  reveals
 -- let  there  be  of  become  hail  praying  reveal  whether  otherwise  so
 -- litany  for  forsake  ascend  bearing  confess  answer  absolve  as  transgress
--- manifest  from  its  amen  discern  negate  remainder
+-- manifest  from  its  amen  discern  negate  remainder  after  thus
 -- plus  minus  times  over  is  not  greater  lesser  than  no
 -- blessed  forsaken  and  void  atom  fractional  word  dogma
 -- grace  granted  absent  verdict  righteous  condemned
@@ -205,11 +237,11 @@ ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
 -- ============================================================
 --  BUILT-IN SALMS
 -- ============================================================
--- proclaim  receiving val of word               reveals void   -- print with newline
--- herald    receiving val of word               reveals void   -- print without newline
--- inquire                                       reveals word   -- read a line from stdin
--- atom_of   receiving val of word               reveals atom   -- parse word → atom
--- word_of   receiving val of word               reveals word   -- convert any value → word
+-- proclaim  receiving val of word    reveals void   -- print with newline
+-- herald    receiving val of word    reveals void   -- print without newline
+-- inquire                            reveals word   -- read a line from stdin
+-- atom_of   receiving val of word    reveals atom   -- parse word → atom
+-- word_of   receiving val of word    reveals word   -- convert any value → word
 
 
 -- ============================================================

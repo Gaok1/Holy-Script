@@ -94,6 +94,24 @@ impl Parser {
         }
     }
 
+    /// Like `expect_ident` but also accepts built-in variant keywords
+    /// (`granted`, `absent`, `righteous`, `condemned`) as plain names.
+    fn expect_variant_name(&mut self) -> Result<String, ParseError> {
+        let sp = self.sp().clone();
+        match self.advance().token {
+            Token::Ident(name)   => Ok(name),
+            Token::Granted       => Ok("granted".into()),
+            Token::Absent        => Ok("absent".into()),
+            Token::Righteous     => Ok("righteous".into()),
+            Token::Condemned     => Ok("condemned".into()),
+            t => Err(ParseError::at(
+                format!("expected a variant name, found {}", token_name(&t)),
+                sp.line,
+                sp.col,
+            )),
+        }
+    }
+
     // ──────────────────────────────────────────────────────────────
     // Program
     // ──────────────────────────────────────────────────────────────
@@ -172,6 +190,7 @@ impl Parser {
     fn parse_scripture(&mut self) -> Result<TopDecl, ParseError> {
         self.expect(&Token::Scripture)?;
         let name = self.expect_ident()?;
+        let type_params = self.parse_type_params()?;
 
         let mut fields = Vec::new();
 
@@ -192,7 +211,7 @@ impl Parser {
                 sp.col,
             ));
         }
-        Ok(TopDecl::Scripture { name, fields })
+        Ok(TopDecl::Scripture { name, type_params, fields })
     }
 
     fn parse_sin_decl(&mut self) -> Result<TopDecl, ParseError> {
@@ -217,6 +236,7 @@ impl Parser {
     fn parse_covenant_decl(&mut self) -> Result<TopDecl, ParseError> {
         self.expect(&Token::Covenant)?;
         let name = self.expect_ident()?;
+        let type_params = self.parse_type_params()?;
         self.expect(&Token::Indent)?;
 
         let mut variants = Vec::new();
@@ -249,7 +269,7 @@ impl Parser {
             ));
         }
 
-        Ok(TopDecl::Covenant { name, variants })
+        Ok(TopDecl::Covenant { name, type_params, variants })
     }
 
     fn parse_salm_decl(&mut self) -> Result<TopDecl, ParseError> {
@@ -259,24 +279,28 @@ impl Parser {
         if self.peek() == &Token::Upon {
             self.advance();
             let target_type = self.expect_ident()?;
+            let type_params = self.parse_type_params()?;
             let params = self.parse_optional_params()?;
             self.expect(&Token::Reveals)?;
             let ret_type = self.parse_type()?;
             let body = self.parse_block()?;
             Ok(TopDecl::MethodSalm {
                 name,
+                type_params,
                 target_type,
                 params,
                 ret_type,
                 body,
             })
         } else {
+            let type_params = self.parse_type_params()?;
             let params = self.parse_optional_params()?;
             self.expect(&Token::Reveals)?;
             let ret_type = self.parse_type()?;
             let body = self.parse_block()?;
             Ok(TopDecl::Salm {
                 name,
+                type_params,
                 params,
                 ret_type,
                 body,
@@ -298,23 +322,7 @@ impl Parser {
         while self.peek() == &Token::Comma {
             self.advance();
             params.push(self.parse_param()?);
-            
         }
-        loop {
-            match self.peek() {
-                &Token::Comma => {
-                    self.advance();
-                    params.push(self.parse_param()?); continue;
-                }
-                &Token::And => {
-                     self.advance();
-                     params.push(self.parse_param()?);
-                     break;
-                }
-                _ => break
-            }
-        }
-
         Ok(params)
     }
 
@@ -332,22 +340,94 @@ impl Parser {
     fn parse_type(&mut self) -> Result<HolyType, ParseError> {
         let sp = self.sp().clone();
         match self.advance().token {
-            Token::Atom => Ok(HolyType::Atom),
+            Token::Atom       => Ok(HolyType::Atom),
             Token::Fractional => Ok(HolyType::Fractional),
-            Token::Word => Ok(HolyType::Word),
-            Token::Dogma => Ok(HolyType::Dogma),
-            Token::Void => Ok(HolyType::Void),
-            Token::Ident(n) => Ok(HolyType::Custom(n)),
+            Token::Word       => Ok(HolyType::Word),
+            Token::Dogma      => Ok(HolyType::Dogma),
+            Token::Void       => Ok(HolyType::Void),
+
+            // grace of T  — built-in Option
+            // optional 'thus' after inner type closes this arg in an outer generic context
+            Token::Grace => {
+                self.expect(&Token::Of)?;
+                let inner = self.parse_type()?;
+                if self.peek() == &Token::Thus { self.advance(); }
+                Ok(HolyType::Grace(Box::new(inner)))
+            }
+
+            // verdict of T, E  — built-in Result
+            // optional 'thus' after each arg closes it in an outer generic context
+            Token::Verdict => {
+                self.expect(&Token::Of)?;
+                let ok_ty  = self.parse_type()?;
+                if self.peek() == &Token::Thus { self.advance(); }
+                self.expect(&Token::Comma)?;
+                let err_ty = self.parse_type()?;
+                if self.peek() == &Token::Thus { self.advance(); }
+                Ok(HolyType::Verdict(Box::new(ok_ty), Box::new(err_ty)))
+            }
+
+            // user-defined type, optionally generic: Pair of atom, word
+            Token::Ident(n) => {
+                if self.peek() == &Token::Of {
+                    // peek ahead: is the token after 'of' a type keyword or Ident?
+                    // (not Indent/Dedent/etc — those mean 'of' belongs to a field decl)
+                    if self.is_type_start_ahead(1) {
+                        self.advance(); // consume 'of'
+                        let first = self.parse_type()?;
+                        let mut type_args = vec![first];
+                        // 'thus' after a type arg closes this generic and returns to outer context
+                        if self.peek() == &Token::Thus {
+                            self.advance(); // consume 'thus', stop collecting args
+                        } else {
+                            while self.peek() == &Token::Comma && self.is_type_start_ahead(1) {
+                                self.advance();
+                                type_args.push(self.parse_type()?);
+                                if self.peek() == &Token::Thus {
+                                    self.advance(); // consume 'thus', stop
+                                    break;
+                                }
+                            }
+                        }
+                        return Ok(HolyType::Generic(n, type_args));
+                    }
+                }
+                Ok(HolyType::Custom(n))
+            }
 
             t => Err(ParseError::at(
                 format!(
-                    "invalid type {} — use: atom, fractional, word, dogma, void or a scripture name",
+                    "invalid type {} — use: atom, fractional, word, dogma, void, grace, verdict or a type name",
                     token_name(&t)
                 ),
                 sp.line,
                 sp.col,
             )),
         }
+    }
+
+    /// Returns true if the token `offset` positions ahead of current could start a type.
+    fn is_type_start_ahead(&self, offset: usize) -> bool {
+        let tok = self.tokens.get(self.pos + offset).map(|s| &s.token);
+        matches!(tok,
+            Some(Token::Atom) | Some(Token::Fractional) | Some(Token::Word) |
+            Some(Token::Dogma) | Some(Token::Void) | Some(Token::Grace) |
+            Some(Token::Verdict) | Some(Token::Ident(_))
+        )
+    }
+
+    /// Parses `of T`, `of T, E` — optional type parameter list after a declaration name.
+    fn parse_type_params(&mut self) -> Result<Vec<String>, ParseError> {
+        if self.peek() != &Token::Of || !self.is_type_start_ahead(1) {
+            return Ok(Vec::new());
+        }
+        self.advance(); // consume 'of'
+        let mut params = vec![self.expect_ident()?];
+        while self.peek() == &Token::Comma {
+            self.advance();
+            params.push(self.expect_ident()?);
+        }
+        Ok(params)
     }
 
     // ──────────────────────────────────────────────────────────────
@@ -455,23 +535,25 @@ impl Parser {
             let target = self.expect_ident()?;
             let args = if self.peek() == &Token::Praying {
                 self.advance();
-                self.parse_arg_list()?
+                let a = self.parse_arg_list()?;
+                if self.peek() == &Token::Thus { self.advance(); }
+                a
             } else {
                 Vec::new()
             };
-            Ok(Stmt::MethodCallStmt {
-                method: name,
-                target,
-                args,
-            })
+            Ok(Stmt::MethodCallStmt { method: name, target, args })
         } else {
+            // Optional type args: `hail name of T, E praying ...`
+            let type_args = self.parse_call_type_args()?;
             let args = if self.peek() == &Token::Praying {
                 self.advance();
-                self.parse_arg_list()?
+                let a = self.parse_arg_list()?;
+                if self.peek() == &Token::Thus { self.advance(); }
+                a
             } else {
                 Vec::new()
             };
-            Ok(Stmt::FnCallStmt { name, args })
+            Ok(Stmt::FnCallStmt { name, type_args, args })
         }
     }
 
@@ -578,13 +660,15 @@ impl Parser {
 
     fn parse_discern(&mut self) -> Result<Stmt, ParseError> {
         self.expect(&Token::Discern)?;
-        let target = self.expect_ident()?;
+        
+        let target = self.parse_expr()?;
+
         self.expect(&Token::Indent)?;
 
         let mut branches = Vec::new();
         while self.peek() == &Token::As {
             self.advance();
-            let variant = self.expect_ident()?;
+            let variant = self.expect_variant_name()?;
             let bindings = if self.peek() == &Token::Bearing {
                 self.advance();
                 let mut bs = vec![self.expect_ident()?];
@@ -777,6 +861,21 @@ impl Parser {
     fn parse_atom(&mut self) -> Result<Expr, ParseError> {
         let sp = self.sp().clone();
         match self.peek().clone() {
+            // `after expr thus`  — explicit grouping, equivalent to parentheses
+            Token::After => {
+                self.advance();
+                let inner = self.parse_expr()?;
+                let thus_sp = self.sp().clone();
+                if self.peek() != &Token::Thus {
+                    return Err(ParseError::at(
+                        format!("expected 'thus' to close 'after' grouping, found {}", token_name(self.peek())),
+                        thus_sp.line, thus_sp.col,
+                    ));
+                }
+                self.advance(); // consume 'thus'
+                Ok(inner)
+            }
+
             Token::Hail => {
                 self.advance();
                 let name = self.expect_ident()?;
@@ -785,38 +884,106 @@ impl Parser {
                     let target = self.expect_ident()?;
                     let args = if self.peek() == &Token::Praying {
                         self.advance();
-                        self.parse_arg_list()?
+                        let a = self.parse_arg_list()?;
+                        if self.peek() == &Token::Thus { self.advance(); }
+                        a
                     } else {
                         Vec::new()
                     };
-                    Ok(Expr::MethodCall {
-                        method: name,
-                        target,
-                        args,
-                    })
+                    Ok(Expr::MethodCall { method: name, target, args })
                 } else {
+                    // Optional type args: `hail name of T, E praying ...`
+                    let type_args = self.parse_call_type_args()?;
                     let args = if self.peek() == &Token::Praying {
                         self.advance();
-                        self.parse_arg_list()?
+                        let a = self.parse_arg_list()?;
+                        if self.peek() == &Token::Thus { self.advance(); }
+                        a
                     } else {
                         Vec::new()
                     };
-                    Ok(Expr::FnCall { name, args })
+                    Ok(Expr::FnCall { name, type_args, args })
                 }
             }
             Token::Manifest => {
                 self.advance();
-                let scripture = self.expect_ident()?;
+                // Check for `manifest variant of covenant (of type_args)? (praying args)?`
+                // vs plain `manifest Scripture (praying args)?`
+                // Use expect_variant_name so built-in variant keywords (granted, etc.) are accepted.
+                let name = self.expect_variant_name()?;
+                if self.peek() == &Token::Of {
+                    let next = self.tokens.get(self.pos + 1).map(|s| &s.token);
+                    let is_covenant = matches!(next,
+                        Some(Token::Ident(_)) | Some(Token::Grace) | Some(Token::Verdict));
+                    if is_covenant {
+                        self.advance(); // consume 'of'
+                        let covenant = self.parse_builtin_covenant_name()?;
+                        let type_args = self.parse_variant_type_args()?;
+                        let args = if self.peek() == &Token::Praying {
+                            self.advance();
+                            let a = self.parse_arg_list()?;
+                            if self.peek() == &Token::Thus { self.advance(); }
+                            a
+                        } else {
+                            Vec::new()
+                        };
+                        return Ok(Expr::ManifestVariant { variant: name, covenant, type_args, args });
+                    }
+                }
                 let args = if self.peek() == &Token::Praying {
                     self.advance();
-                    self.parse_arg_list()?
+                    let a = self.parse_arg_list()?;
+                    if self.peek() == &Token::Thus { self.advance(); }
+                    a
                 } else {
                     Vec::new()
                 };
-                Ok(Expr::Manifest { scripture, args })
+                Ok(Expr::Manifest { scripture: name, args })
             }
+
+            // `granted`, `absent`, `righteous`, `condemned` as variant keywords
+            Token::Granted | Token::Absent | Token::Righteous | Token::Condemned => {
+                let variant = match self.advance().token {
+                    Token::Granted   => "granted".to_string(),
+                    Token::Absent    => "absent".to_string(),
+                    Token::Righteous => "righteous".to_string(),
+                    Token::Condemned => "condemned".to_string(),
+                    _ => unreachable!(),
+                };
+                // Must be followed by `of covenant (of type_args)?`
+                self.expect(&Token::Of)?;
+                let covenant = self.parse_builtin_covenant_name()?;
+                let type_args = self.parse_variant_type_args()?;
+                // data variants: granted/righteous/condemned may have praying
+                let args = if self.peek() == &Token::Praying {
+                    self.advance();
+                    let a = self.parse_arg_list()?;
+                    if self.peek() == &Token::Thus { self.advance(); }
+                    a
+                } else {
+                    Vec::new()
+                };
+                if args.is_empty() {
+                    Ok(Expr::TypedUnitVariant { variant, covenant, type_args })
+                } else {
+                    Ok(Expr::ManifestVariant { variant, covenant, type_args, args })
+                }
+            }
+
             Token::Ident(name) => {
                 self.advance();
+                // `variantName of covenantName (of type_args)?`  — typed unit variant
+                if self.peek() == &Token::Of {
+                    let next = self.tokens.get(self.pos + 1).map(|s| &s.token);
+                    let is_covenant = matches!(next,
+                        Some(Token::Ident(_)) | Some(Token::Grace) | Some(Token::Verdict));
+                    if is_covenant {
+                        self.advance(); // consume 'of'
+                        let covenant = self.parse_builtin_covenant_name()?;
+                        let type_args = self.parse_variant_type_args()?;
+                        return Ok(Expr::TypedUnitVariant { variant: name, covenant, type_args });
+                    }
+                }
                 if self.peek() == &Token::From {
                     self.advance();
                     self.parse_from_target(name)
@@ -858,28 +1025,71 @@ impl Parser {
         }
     }
 
+    /// Parses `of T (,E)*` as type args for a generic salm/method call site.
+    /// Returns empty vec if next token is not `of` followed by a type start.
+    /// Each type is parsed via `parse_type` which already handles optional `thus` internally.
+    fn parse_call_type_args(&mut self) -> Result<Vec<HolyType>, ParseError> {
+        if self.peek() != &Token::Of || !self.is_type_start_ahead(1) {
+            return Ok(Vec::new());
+        }
+        self.advance(); // consume 'of'
+        let first = self.parse_type()?;
+        let mut args = vec![first];
+        while self.peek() == &Token::Comma && self.is_type_start_ahead(1) {
+            self.advance();
+            args.push(self.parse_type()?);
+        }
+        Ok(args)
+    }
+
+    /// Parses `of type (,type)*` as type args for a generic variant instantiation.
+    /// Called after consuming the covenant name. Returns empty vec if no `of` follows
+    /// or if the token after `of` is not a type start.
+    fn parse_variant_type_args(&mut self) -> Result<Vec<HolyType>, ParseError> {
+        if self.peek() == &Token::Of && self.is_type_start_ahead(1) {
+            self.advance(); // consume 'of'
+            let first = self.parse_type()?;
+            let mut args = vec![first];
+            while self.peek() == &Token::Comma && self.is_type_start_ahead(1) {
+                self.advance();
+                args.push(self.parse_type()?);
+            }
+            Ok(args)
+        } else {
+            Ok(Vec::new())
+        }
+    }
+
+    /// Parses a built-in covenant name token (`grace` or `verdict`) as a String.
+    fn parse_builtin_covenant_name(&mut self) -> Result<String, ParseError> {
+        let sp = self.sp().clone();
+        match self.advance().token {
+            Token::Grace   => Ok("grace".into()),
+            Token::Verdict => Ok("verdict".into()),
+            Token::Ident(n) => Ok(n),
+            t => Err(ParseError::at(
+                format!("expected a covenant name after 'of', found {}", token_name(&t)),
+                sp.line, sp.col,
+            )),
+        }
+    }
+
     /// Called after consuming `fieldName from` — parses the source of the access.
-    /// Supports arbitrary nesting: `b from fieldComposite from its`
+    /// Accepts any atom as the object: `b from its`, `b from varName`,
+    /// `b from hail getBox praying x`, `b from manifest Box praying ...`, etc.
+    /// Chaining (`a from b from c`) works because `parse_atom` on an ident
+    /// already handles the inner `from` recursively.
     fn parse_from_target(&mut self, field: String) -> Result<Expr, ParseError> {
         if let &Token::Its = self.peek() {
             self.advance();
             return Ok(Expr::SelfFieldAccess { field });
         }
 
-        let object_name = self.expect_ident()?;
-        if self.peek() == &Token::From {
-            self.advance();
-            let inner = self.parse_from_target(object_name)?;
-            Ok(Expr::FieldAccess {
-                field,
-                object: Box::new(inner),
-            })
-        } else {
-            Ok(Expr::FieldAccess {
-                field,
-                object: Box::new(Expr::Var(object_name)),
-            })
-        }
+        let object = self.parse_atom()?;
+        Ok(Expr::FieldAccess {
+            field,
+            object: Box::new(object),
+        })
     }
 
     fn parse_arg_list(&mut self) -> Result<Vec<Expr>, ParseError> {

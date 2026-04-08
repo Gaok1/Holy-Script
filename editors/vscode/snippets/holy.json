@@ -17,6 +17,15 @@
         "description": "Define um salm sem parâmetros"
     },
 
+    "Salm genérico (com type parameter)": {
+        "prefix": "salmg",
+        "body": [
+            "salm ${1:nome} of ${2:T} receiving ${3:param} of ${2:T} reveals ${2:T}",
+            "\t${0:reveal ${3:param}}"
+        ],
+        "description": "Define um salm genérico com type parameter"
+    },
+
     "Method Salm": {
         "prefix": "msalm",
         "body": [
@@ -26,6 +35,15 @@
         "description": "Define um method salm bindado a um scripture"
     },
 
+    "Method Salm genérico": {
+        "prefix": "msalmg",
+        "body": [
+            "salm ${1:nome} upon ${2:Scripture} of ${3:T} reveals ${4|void,atom,fractional,word,dogma|}",
+            "\t${0:reveal ${5:0}}"
+        ],
+        "description": "Define um method salm genérico bindado a um scripture"
+    },
+
     "Scripture (struct)": {
         "prefix": "scripture",
         "body": [
@@ -33,6 +51,15 @@
             "\t${2:campo} of ${3|atom,fractional,word,dogma|}$0"
         ],
         "description": "Define um scripture (estrutura de dados)"
+    },
+
+    "Scripture genérico (com type parameter)": {
+        "prefix": "scriptureg",
+        "body": [
+            "scripture ${1:Nome} of ${2:T}",
+            "\t${3:value} of ${2:T}$0"
+        ],
+        "description": "Define um scripture genérico com type parameter"
     },
 
     "Sin (exceção)": {
@@ -304,6 +331,73 @@
         "description": "Pattern match em covenant variant com extração de dados (bearing)"
     },
 
+    "grace (Option) — granted": {
+        "prefix": "granted",
+        "body": [
+            "manifest granted of grace of ${1|atom,fractional,word,dogma|} praying ${0:valor}"
+        ],
+        "description": "Instancia um grace::granted (Some) com valor"
+    },
+
+    "grace (Option) — absent": {
+        "prefix": "absent",
+        "body": [
+            "absent of grace of ${0|atom,fractional,word,dogma|}"
+        ],
+        "description": "Instancia um grace::absent (None)"
+    },
+
+    "verdict (Result) — righteous": {
+        "prefix": "righteous",
+        "body": [
+            "manifest righteous of verdict of ${1|atom,fractional,word,dogma|}, ${2|atom,fractional,word,dogma|} praying ${0:valor}"
+        ],
+        "description": "Instancia um verdict::righteous (Ok) com valor"
+    },
+
+    "verdict (Result) — condemned": {
+        "prefix": "condemned",
+        "body": [
+            "manifest condemned of verdict of ${1|atom,fractional,word,dogma|}, ${2|atom,fractional,word,dogma|} praying ${0:\"razao\"}"
+        ],
+        "description": "Instancia um verdict::condemned (Err) com razão"
+    },
+
+    "discern grace (Option)": {
+        "prefix": "discerngrace",
+        "body": [
+            "discern ${1:variavel}",
+            "\tas granted bearing ${2:valor}",
+            "\t\t${3:hail proclaim praying valor}",
+            "\tas absent",
+            "\t\t${0:hail proclaim praying \"nothing\"}"
+        ],
+        "description": "Pattern match em grace of T (granted | absent)"
+    },
+
+    "discern verdict (Result)": {
+        "prefix": "discernverdict",
+        "body": [
+            "discern ${1:variavel}",
+            "\tas righteous bearing ${2:valor}",
+            "\t\t${3:hail proclaim praying valor}",
+            "\tas condemned bearing ${4:razao}",
+            "\t\t${0:hail proclaim praying razao}"
+        ],
+        "description": "Pattern match em verdict of T, E (righteous | condemned)"
+    },
+
+    "Covenant genérico (com type param)": {
+        "prefix": "covenantg",
+        "body": [
+            "covenant ${1:Nome} of ${2:T}",
+            "\t${3:Some}",
+            "\t\t${4:value} of ${2:T}",
+            "\t${0:None}"
+        ],
+        "description": "Declara um covenant genérico com type parameter"
+    },
+
     "hail proclaim": {
         "prefix": "proclaim",
         "body": [
@@ -330,5 +424,101 @@
             "amen"
         ],
         "description": "Estrutura básica de um programa holy"
+    },
+
+    "hail com type arg (genérico)": {
+        "prefix": "hailg",
+        "body": [
+            "hail ${1:nome} of ${2|atom,fractional,word,dogma|} praying ${0:args}"
+        ],
+        "description": "Chama um salm genérico com type argument explícito"
+    },
+
+    "hail aninhado com thus (arg não-final)": {
+        "prefix": "hailtail",
+        "body": [
+            "hail ${1:outer} praying hail ${2:inner} praying ${3:args} thus and ${0:rest}"
+        ],
+        "description": "Chama salm aninhado onde o inner não é o último argumento; thus fecha arg list do inner"
+    },
+
+    "manifest variant de covenant (manifest Variant of Covenant)": {
+        "prefix": "manifestv",
+        "body": [
+            "manifest ${1:Variant} of ${2:CovenantType} praying ${0:valor}"
+        ],
+        "description": "Instancia uma variant de covenant com dados"
+    },
+
+    "thus (fechar contexto)": {
+        "prefix": "thus",
+        "body": [
+            "thus"
+        ],
+        "description": "Fecha o contexto aberto mais recente (type arg, arg list ou after)"
+    },
+
+    "after … thus (agrupamento)": {
+        "prefix": "after",
+        "body": [
+            "after ${1:expr} thus"
+        ],
+        "description": "Agrupa uma sub-expressão (equivalente a parênteses)"
+    },
+
+    "hail word_of": {
+        "prefix": "wordof",
+        "body": [
+            "hail word_of praying ${0:valor}"
+        ],
+        "description": "Converte um valor para word (string)"
+    },
+
+    "hail atom_of": {
+        "prefix": "atomof",
+        "body": [
+            "hail atom_of praying ${0:\"texto\"}"
+        ],
+        "description": "Converte uma word para atom (inteiro)"
+    },
+
+    "let there com tipo genérico": {
+        "prefix": "letg",
+        "body": [
+            "let there ${1:nome} of ${2:Type} of ${3|atom,fractional,word,dogma|} be ${0:manifest ${2:Type} praying}"
+        ],
+        "description": "Declara variável com tipo genérico (ex: grace of atom, Stack of T)"
+    },
+
+    "verdict — reveal righteous": {
+        "prefix": "revealok",
+        "body": [
+            "reveal manifest righteous of verdict of ${1|atom,fractional,word,dogma|}, ${2|atom,fractional,word,dogma|} praying ${0:valor}"
+        ],
+        "description": "Retorna um verdict::righteous (Ok)"
+    },
+
+    "verdict — reveal condemned": {
+        "prefix": "revealerr",
+        "body": [
+            "reveal manifest condemned of verdict of ${1|atom,fractional,word,dogma|}, ${2|atom,fractional,word,dogma|} praying ${0:\"razao\"}"
+        ],
+        "description": "Retorna um verdict::condemned (Err)"
+    },
+
+    "grace — reveal granted": {
+        "prefix": "revealgranted",
+        "body": [
+            "reveal manifest granted of grace of ${1|atom,fractional,word,dogma|} praying ${0:valor}"
+        ],
+        "description": "Retorna um grace::granted (Some)"
+    },
+
+    "grace — reveal absent": {
+        "prefix": "revealabsent",
+        "body": [
+            "reveal absent of grace of ${0|atom,fractional,word,dogma|}"
+        ],
+        "description": "Retorna um grace::absent (None)"
     }
 }
