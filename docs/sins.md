@@ -6,7 +6,7 @@ Sins are the exception mechanism of Holy Lang. A sin is thrown with `transgress`
 
 ## Declaring a sin
 
-```
+```holy
 sin Failure
     message of word
 
@@ -17,7 +17,7 @@ sin OutOfBounds
 
 A sin with no fields is valid — the type alone is enough:
 
-```
+```holy
 sin NotFound
 ```
 
@@ -25,7 +25,7 @@ sin NotFound
 
 ## Throwing — `transgress`
 
-```
+```holy
 transgress Failure praying "something went wrong"
 transgress OutOfBounds praying index, max
 transgress NotFound
@@ -39,7 +39,7 @@ Arguments are in field declaration order. `praying` is omitted if the sin has no
 
 ## Catching — `confess` / `answer for` / `absolve`
 
-```
+```holy
 confess
     -- try block
     transgress Failure praying "oops"
@@ -68,7 +68,7 @@ Rules:
 
 Inside an `answer for … as name` block, the bound variable behaves like a scripture instance:
 
-```
+```holy
 sin ParseError
     input   of word
     column  of atom
@@ -99,7 +99,7 @@ The runtime raises these sins automatically for common errors. They can be caugh
 | `InvalidDiscern`          | `discern` on a non-covenant value, or no branch matched |
 | `InvalidContext`          | `its` used outside a method salm |
 
-```
+```holy
 confess
     let there n of atom be hail atom_of praying "not a number"
     let there result of atom be 100 over n

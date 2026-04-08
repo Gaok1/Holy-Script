@@ -6,7 +6,7 @@ Holy Lang supports modules through the `testament` declaration. Module imports a
 
 ## Importing a module — `testament`
 
-```
+```holy
 testament MathUtils
 ```
 
@@ -16,7 +16,7 @@ Imports all public symbols (scriptures, covenants, salms, sins) from the `MathUt
 
 ## Selective import — `revealing`
 
-```
+```holy
 testament Collections revealing Stack, Queue
 testament MathUtils revealing add, multiply
 ```
@@ -27,7 +27,7 @@ Only the listed symbols are imported. All other symbols in that module remain in
 
 ## Multiple imports
 
-```
+```holy
 testament MathUtils
 testament Collections revealing Stack
 testament Strings revealing trim, split
@@ -39,7 +39,7 @@ Imports are processed in declaration order.
 
 ## Module declaration syntax
 
-```
+```holy
 testament ModuleName
 testament ModuleName revealing Symbol1, Symbol2, Symbol3
 ```

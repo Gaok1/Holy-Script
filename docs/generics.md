@@ -8,7 +8,7 @@ Holy Lang supports type parameters on scriptures, covenants, and salms. Everythi
 
 Use `of` followed by a comma-separated list of type parameter names after the declaration name.
 
-```
+```holy
 -- generic scripture
 scripture Box of T
     value of T
@@ -39,7 +39,7 @@ Type parameter names are conventional identifiers (single capital letters by con
 
 At every call or instantiation site, type args are supplied explicitly with `of`:
 
-```
+```holy
 -- scripture instantiation
 let there b of Box of atom be manifest Box praying 42
 let there p of Pair of atom, word be manifest Pair praying 1 and "x"
@@ -59,9 +59,11 @@ let there n of Option of atom be None of Option of atom
 
 `thus` is a **closing marker**. It signals to the parser that a nested generic type's argument list is complete, so the next `,` belongs to the outer context instead.
 
+For a focused guide to ambiguity cases across generic types, nested calls, and grouped expressions, see [Disambiguation with `thus` and `after`](nesting.md).
+
 ### The problem without `thus`
 
-```
+```holy
 -- WRONG: parser reads "Stack<T, word>" then verdict has no second arg → error
 verdict of Stack of T, word
 
@@ -73,7 +75,7 @@ The parser greedily consumes every `,` that follows a type, treating it as anoth
 
 ### The solution — `thus`
 
-```
+```holy
 -- CORRECT: thus closes Stack<T>, then ", word" goes to verdict
 verdict of Stack of T thus, word
 
@@ -83,7 +85,7 @@ verdict of Stack of atom thus, word
 
 ### Simple types never need `thus`
 
-```
+```holy
 verdict of atom, word        -- ok: atom has no type args, no ambiguity
 grace of word                -- ok
 verdict of T, E              -- ok: T and E are simple names with no "of"
@@ -99,7 +101,7 @@ verdict of T, E              -- ok: T and E are simple names with no "of"
 
 In any position where a type is written — `let there`, `salm reveals`, `receiving`, field declarations:
 
-```
+```holy
 -- return type
 salm pop of T receiving s of Stack of T reveals verdict of Stack of T thus, word
     ...
@@ -116,7 +118,7 @@ let there result of verdict of Stack of atom thus, word be hail pop of atom pray
 
 When the type argument list of a covenant/variant is itself generic:
 
-```
+```holy
 -- righteous carries Stack<T>, E is word
 manifest righteous of verdict of Stack of T thus, word praying newStack
 
@@ -129,7 +131,7 @@ manifest granted of grace of StackNode of T praying node
 
 When a call is used as an argument to another call and is **not the last** argument, `thus` closes the inner call's argument list:
 
-```
+```holy
 -- add(double(3), 1) — thus closes double's args before "and 1"
 hail add praying hail double praying 3 thus and 1
 
@@ -137,16 +139,18 @@ hail add praying hail double praying 3 thus and 1
 hail a praying hail b praying hail c praying 1 thus thus and 2
 ```
 
-Without `thus`, `and 1` would be parsed as a second argument to `double`.
+Without `thus`, `and 1` would be parsed as a second argument to `double`. See [Disambiguation with `thus` and `after`](nesting.md#2-disambiguating-nested-calls).
 
 ### 4. Expression grouping — `after … thus`
 
 `after` opens a sub-expression and `thus` closes it, equivalent to parentheses:
 
-```
+```holy
 after 3 times 5 thus            -- (3 * 5) = 15
 5 plus after 3 times 2 thus     -- 5 + (3 * 2) = 11
 ```
+
+See also [Disambiguation with `thus` and `after`](nesting.md#1-disambiguating-expression-precedence-with-after).
 
 ---
 
@@ -173,7 +177,7 @@ Type parameters are erased at runtime. The interpreter does **not** enforce gene
 
 It **does** enforce concrete types:
 
-```
+```holy
 -- TypeError: granted of grace of atom expects atom, got word
 manifest granted of grace of atom praying "hello"
 
@@ -189,7 +193,7 @@ Built-in `grace` and `verdict` have first-class type enforcement — their concr
 
 ## Full example
 
-```
+```holy
 scripture Stack of T
     top  of grace of StackNode of T
     size of atom

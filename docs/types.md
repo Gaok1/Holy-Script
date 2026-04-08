@@ -1,5 +1,7 @@
 # Types & Variables
 
+Holy is strongly typed: values must match their declared types. Type checks happen at runtime, but the language does not allow arbitrary type changes once a variable, field, parameter, or return type has been declared.
+
 ## Primitive types
 
 | Keyword      | Meaning              | Default       | Literal examples      |
@@ -20,7 +22,7 @@
 
 Zero-initialises to the type's default.
 
-```
+```holy
 let there be x of atom          -- x = 0
 let there be msg of word        -- msg = ""
 let there be flag of dogma      -- flag = forsaken
@@ -28,7 +30,7 @@ let there be flag of dogma      -- flag = forsaken
 
 ### Declaration with a value
 
-```
+```holy
 let there x of atom be 42
 let there greeting of word be "Hail, world!"
 let there active of dogma be blessed
@@ -37,7 +39,7 @@ let there ratio of fractional be 3.14
 
 ### Reassignment
 
-```
+```holy
 x become x plus 1
 greeting become "Farewell"
 ```
@@ -62,7 +64,7 @@ The variable must already be declared. The new value must match the declared typ
 Division of two `atom` values performs integer division.  
 Mixing `atom` and `fractional` in an expression promotes both to `fractional`.
 
-```
+```holy
 let there x of atom be 10 remainder 3       -- 1
 let there y of fractional be 1 over 2       -- 0  (integer division!)
 let there z of fractional be 1.0 over 2     -- 0.5
@@ -98,7 +100,7 @@ From lowest to highest:
 | 4     | `negate` (unary)                  |
 | 5     | atoms (literals, calls, variables)|
 
-```
+```holy
 -- without grouping: negate binds tightest
 negate 10 remainder 3    -- (-10) % 3 = -1
 
@@ -112,7 +114,7 @@ let there x of atom be 2 plus 3 times 4
 
 `after` opens a grouped sub-expression; `thus` closes it. Equivalent to parentheses.
 
-```
+```holy
 after 3 times 5 thus              -- (3 * 5) = 15
 5 plus after 3 times 2 thus       -- 5 + (3 * 2) = 11
 after 2 plus 3 thus times 4       -- (2 + 3) * 4 = 20
@@ -120,13 +122,15 @@ after 2 plus 3 thus times 4       -- (2 + 3) * 4 = 20
 
 `thus` without a matching `after` (or outside a valid context) is a syntax error.
 
+For ambiguity cases that combine `after` with nested calls or generic types, see [Disambiguation with `thus` and `after`](nesting.md).
+
 ---
 
 ## Type coercion
 
 There is no implicit type coercion. Use built-in salms to convert:
 
-```
+```holy
 -- word → atom
 let there n of atom be hail atom_of praying "42"
 

@@ -6,7 +6,7 @@ Covenants are sum types (tagged unions). A value of a covenant type is always ex
 
 ## Declaration
 
-```
+```holy
 covenant Direction
     North
     South
@@ -14,7 +14,7 @@ covenant Direction
     West
 ```
 
-```
+```holy
 covenant Shape
     Circle
         radius of fractional
@@ -36,7 +36,7 @@ covenant Shape
 
 Reference the variant name directly, followed by `of CovenantName`:
 
-```
+```holy
 let there d of Direction be North of Direction
 ```
 
@@ -46,7 +46,7 @@ let there d of Direction be North of Direction
 
 Use `manifest` to supply field values:
 
-```
+```holy
 let there s of Shape be manifest Circle of Shape praying 5.0
 let there r of Shape be manifest Rectangle of Shape praying 3.0, 4.0
 ```
@@ -59,7 +59,7 @@ Arguments are in **field declaration order**.
 
 `discern` matches a value against its covenant variants. At least one `as` branch is required. An optional `otherwise` handles any unmatched variant.
 
-```
+```holy
 discern d
     as North
         hail proclaim praying "going up"
@@ -73,7 +73,7 @@ discern d
 
 Add `bearing name1, name2, …` after the variant name to bind its fields positionally to local variables:
 
-```
+```holy
 discern s
     as Circle bearing r
         hail proclaim praying "circle, radius " plus hail word_of praying r
@@ -94,7 +94,7 @@ discern s
 
 Covenants can declare type parameters with `of`:
 
-```
+```holy
 covenant Option of T
     Some
         value of T
@@ -109,12 +109,12 @@ covenant Either of L, R
 
 When instantiating, supply type args explicitly:
 
-```
+```holy
 let there o of Option of atom be manifest Some of Option of atom praying 42
 let there n of Option of atom be None of Option of atom
 ```
 
-See [Generics](generics.md) for disambiguation rules.
+See [Generics](generics.md) for generic-type rules and [Disambiguation with `thus` and `after`](nesting.md) for the general ambiguity model.
 
 ---
 
@@ -133,7 +133,7 @@ Equivalent to `Option` / `Maybe` in other languages.
 | `granted` | `T`    | a value was given |
 | `absent`  | —      | nothing is present (unit variant) |
 
-```
+```holy
 -- creating
 let there g of grace of atom be manifest granted of grace of atom praying 42
 let there n of grace of atom be absent of grace of atom
@@ -142,7 +142,7 @@ let there n of grace of atom be absent of grace of atom
 let there be x of grace of word    -- x = absent
 ```
 
-```
+```holy
 -- matching
 discern g
     as granted bearing value
@@ -164,13 +164,13 @@ Equivalent to `Result` in other languages.
 | `righteous` | `T`    | operation succeeded |
 | `condemned` | `E`    | operation failed    |
 
-```
+```holy
 -- creating
 let there r of verdict of atom, word be manifest righteous of verdict of atom, word praying 99
 let there e of verdict of atom, word be manifest condemned of verdict of atom, word praying "bad input"
 ```
 
-```
+```holy
 -- matching
 discern r
     as righteous bearing value
@@ -183,7 +183,7 @@ discern r
 
 When `T` or `E` is itself generic, use `thus` to close the inner type before the separating comma:
 
-```
+```holy
 -- verdict<Stack<atom>, word>
 let there result of verdict of Stack of atom thus, word be hail pop of atom praying s
 
@@ -194,7 +194,7 @@ discern result
         hail proclaim praying reason
 ```
 
-See [Generics — thus](generics.md#thus-disambiguation) for the full rule.
+See [Generics — `thus`](generics.md#thus--disambiguation) and [Disambiguation with `thus` and `after`](nesting.md#4-disambiguating-nested-generic-types) for the full rule.
 
 ---
 
@@ -202,7 +202,7 @@ See [Generics — thus](generics.md#thus-disambiguation) for the full rule.
 
 `otherwise` at the end of a `discern` block acts as a catch-all:
 
-```
+```holy
 discern status
     as Active
         hail proclaim praying "online"

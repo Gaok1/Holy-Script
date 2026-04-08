@@ -4,12 +4,12 @@
 
 ## Conditional — `whether`
 
-```
+```holy
 whether condition
     -- true branch (required)
 ```
 
-```
+```holy
 whether x greater than 10
     hail proclaim praying "large"
 otherwise so x is 10
@@ -41,7 +41,7 @@ otherwise
 
 Executes the body repeatedly as long as the condition is truthy.
 
-```
+```holy
 let there i of atom be 1
 litany for i no greater than 5
     hail proclaim praying hail word_of praying i
@@ -58,7 +58,7 @@ The condition is re-evaluated before each iteration. If it is falsy on first che
 
 Exits the current `litany for` immediately.
 
-```
+```holy
 let there i of atom be 1
 litany for blessed
     whether i is 5
@@ -70,7 +70,7 @@ litany for blessed
 
 Skips the rest of the current iteration and re-evaluates the condition.
 
-```
+```holy
 let there i of atom be 0
 litany for i lesser than 10
     i become i plus 1
@@ -87,7 +87,7 @@ litany for i lesser than 10
 
 `forsake` and `ascend` only affect the **innermost** `litany for`:
 
-```
+```holy
 let there i of atom be 0
 litany for i lesser than 3
     let there j of atom be 0

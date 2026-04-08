@@ -1,9 +1,11 @@
 # Holy Script
 <img width="500" height="500" alt="Emblema da linguagem Holy Script" src="https://github.com/user-attachments/assets/c6a7e8f8-0add-4c8b-bd4b-2d47463baa83" />
 
-An interpreted, dynamically-typed programming language with archaic/biblical syntax, implemented in Rust.
+An interpreted, strongly typed programming language with archaic/biblical syntax, implemented in Rust.
 
-```
+Types are declared explicitly and enforced at runtime. Variables, scripture fields, salm parameters, and return values must match their declared types.
+
+```holy
 scripture Person
     name of word
     age  of atom
@@ -30,6 +32,7 @@ amen
 | [Control Flow](docs/control-flow.md) | `whether`, `litany for`, `forsake`, `ascend` |
 | [Sins](docs/sins.md) | Exception types, `transgress`, `confess`/`answer for`/`absolve` |
 | [Generics](docs/generics.md) | Type parameters, `thus` disambiguation, generic calls |
+| [Nesting](docs/nesting.md) | Disambiguation with `thus` and `after` for nested calls, generics, and expressions |
 | [Modules](docs/modules.md) | `testament` imports, `revealing` selective imports |
 
 ---
@@ -62,7 +65,7 @@ holy -t <file.holy>       # same as --tree
 
 Every program has three sections in order:
 
-```
+```holy
 -- 1. module imports (optional)
 testament MathUtils
 testament Collections revealing Stack, Queue
@@ -94,14 +97,16 @@ Every program **must** end with `amen`. Comments start with `--`.
 ## Quick reference
 
 ### Variables
-```
+```holy
 let there be x of atom          -- declare, zero-initialised
 let there name of word be "Hi"  -- declare with value
 x become 99                     -- reassign
 ```
 
+For `scripture` values, reassignment also happens at the whole-value level: fields are readable with `from`, but inner fields are not directly mutable. To update one field, create a new `manifest ...` value and assign it back to the variable.
+
 ### Operators
-```
+```holy
 a plus b   a minus b   a times b   a over b   a remainder b   negate a
 a is b     a is not b
 a greater than b    a lesser than b
@@ -109,13 +114,13 @@ a no greater than b   a no lesser than b
 ```
 
 ### Expression grouping
-```
+```holy
 after 3 times 5 thus        -- (3 * 5) = 15
 5 plus after 3 times 2 thus -- 5 + (3 * 2) = 11
 ```
 
 ### Functions
-```
+```holy
 salm double receiving n of atom reveals atom
     reveal n times 2
 
@@ -123,7 +128,7 @@ let there x of atom be hail double praying 7
 ```
 
 ### Conditionals & loops
-```
+```holy
 whether x greater than 0
     hail proclaim praying "positive"
 otherwise
@@ -134,7 +139,7 @@ litany for i no greater than 10
 ```
 
 ### Pattern matching
-```
+```holy
 discern result
     as righteous bearing value
         hail proclaim praying hail word_of praying value
@@ -146,7 +151,7 @@ discern result
 
 ## Reserved words
 
-```
+```holy
 testament  revealing  scripture  sin  covenant  salm  upon  receiving  reveals
 let  there  be  of  become  hail  praying  reveal  whether  otherwise  so
 litany  for  forsake  ascend  bearing  confess  answer  absolve  as  transgress
