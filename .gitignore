@@ -1,1 +1,5 @@
 /target
+.codex
+editors/vscode/holy-script-0.1.5.vsix
+editors/vscode/holy-script-0.1.7.vsix
+editors/vscode/holy-script-0.1.8.vsix

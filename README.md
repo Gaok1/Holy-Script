@@ -7,7 +7,9 @@ Types are declared explicitly and enforced at runtime. Variables, scripture fiel
 
 Across Holy's list syntax, the final separator may be written as `and`: `a and b`, `a, b and c`, `Pair of atom and word`, `receiving x of atom and y of atom`.
 
-Holy also includes the built-in generic type `legion of T`, a typed collection. Build one with `hail legion praying ...`, then call built-in methods like `hail length upon xs`, `hail at upon xs praying 0`, and `hail push upon xs praying value`.
+Holy includes `legion of T`, a typed collection with built-in methods (`length`, `at`, `push`, `first`, `last`, `contains`, `reverse`, `slice`, `concat`). `word` also has built-in methods: `length`, `at`, `contains`, `split`, `trim`, `replace`, `to_upper`, `to_lower`, and more.
+
+Built-in salms cover I/O (`proclaim`, `herald`, `inquire`, `read_file`, `write_file`), type conversion (`atom_of`, `parse_atom`, `fractional_of`, `word_of`), math (`abs`, `floor`, `ceil`, `round`, `min`, `max`, `pow`), and program control (`args`, `exit`).
 
 ```holy
 scripture Person
@@ -29,12 +31,13 @@ amen
 
 | Topic | Description |
 |-------|-------------|
+| [Getting Started](docs/index.md) | Program structure, hello world, concepts overview |
 | [Types & Variables](docs/types.md) | Primitive types, literals, variables, operators, expression grouping |
-| [Collections](docs/collections.md) | `legion of T`, built-in collection methods, built-in `word` methods |
+| [Collections](docs/collections.md) | `legion of T`, creation, built-in methods |
+| [Salms](docs/salms.md) | Functions, parameters, return values, all built-in salms |
+| [Control Flow](docs/control-flow.md) | `whether`, `litany for`, `forsake`, `ascend` |
 | [Scriptures](docs/scriptures.md) | Struct-like data types, field access, method salms |
 | [Covenants](docs/covenants.md) | Sum types, pattern matching with `discern`, built-in `grace` and `verdict` |
-| [Salms](docs/salms.md) | Functions, parameters, return values, built-in salms |
-| [Control Flow](docs/control-flow.md) | `whether`, `litany for`, `forsake`, `ascend` |
 | [Sins](docs/sins.md) | Exception types, `transgress`, `confess`/`answer for`/`absolve` |
 | [Generics](docs/generics.md) | Type parameters, `thus` disambiguation, generic calls |
 | [Nesting](docs/nesting.md) | Disambiguation with `thus` and `after` for nested calls, generics, and expressions |
@@ -59,9 +62,11 @@ holy program.holy
 ## CLI
 
 ```bash
-holy <file.holy>          # execute a program
-holy --tree <file.holy>   # print the parse tree (does not execute)
-holy -t <file.holy>       # same as --tree
+holy <file.holy>              # execute a program
+holy --tree <file.holy>       # print the parse tree (does not execute)
+holy -t <file.holy>           # same as --tree
+holy --color <file.holy>      # force ANSI color output (useful in some terminals/IDEs)
+holy <file.holy> arg1 arg2    # pass arguments to the script (accessible via hail args)
 ```
 
 ---

@@ -1,130 +1,118 @@
-# Collections & Built-in Methods
+# Coleções — `legion of T`
 
-Holy includes a built-in generic collection type:
+`legion of T` é a coleção tipada embutida de Holy. Pense nela como um array onde o tipo do elemento é sempre declarado explicitamente.
 
-```holy
-legion of T
-```
+---
 
-It is the primitive array-like collection in the language. Like other Holy types, it is explicit and strongly typed at runtime.
+## Criando uma legion
 
-## Creating a `legion`
-
-Use the built-in salm `legion`:
+Use o salm embutido `legion` com `hail`:
 
 ```holy
-let there xs of legion of atom be hail legion praying 1, 2 and 3
+let there xs    of legion of atom be hail legion praying 1, 2 and 3
 let there names of legion of word be hail legion praying "Ava" and "Noah"
 ```
 
-If declared without a value, a `legion` starts empty:
+Declaração sem valor inicial (legion vazia):
 
 ```holy
-let there be xs of legion of atom
+let there be xs of legion of atom      -- [] (vazio)
 ```
 
-That is equivalent to an empty typed collection.
+---
 
-## Runtime type checks
+## Tipagem em runtime
 
-`legion of atom` only accepts `atom` elements. `legion of word` only accepts `word` elements.
+Uma `legion of atom` só aceita elementos `atom`. Tentar inserir outro tipo lança `TypeError`:
 
 ```holy
+-- OK
 let there xs of legion of atom be hail legion praying 1 and 2
 xs become hail push upon xs praying 3
+
+-- TypeError: "oops" não é atom
+let there ys of legion of atom be hail legion praying 1 and "oops"
 ```
 
-This is valid.
+---
+
+## Métodos disponíveis
+
+Todos os métodos seguem a sintaxe padrão:
 
 ```holy
-let there xs of legion of atom be hail legion praying 1 and "oops"
+hail método upon alvo
+hail método upon alvo praying arg1, arg2
 ```
 
-This raises `TypeError`.
+| Método | Retorna | Descrição |
+|--------|---------|-----------|
+| `hail length upon xs` | `atom` | número de elementos |
+| `hail is_empty upon xs` | `dogma` | se a legion está vazia |
+| `hail at upon xs praying i` | `T` | elemento no índice `i` (base zero) |
+| `hail first upon xs` | `grace of T` | primeiro elemento ou `absent` |
+| `hail last upon xs` | `grace of T` | último elemento ou `absent` |
+| `hail contains upon xs praying v` | `dogma` | se `v` está na legion |
+| `hail index_of upon xs praying v` | `grace of atom` | posição de `v` ou `absent` |
+| `hail reverse upon xs` | `legion of T` | nova legion invertida |
+| `hail push upon xs praying v` | `legion of T` | nova legion com `v` no final |
+| `hail slice upon xs praying start and end` | `legion of T` | sub-legion `[start, end)` |
+| `hail concat upon xs praying ys` | `legion of T` | nova legion com `ys` concatenada |
 
-## Built-in methods on `legion`
+> **Importante:** todos os métodos que retornam `legion of T` (`push`, `slice`, `concat`, `reverse`) **não mutam** a legion existente — retornam uma nova. Reatribua se precisar:
+> ```holy
+> xs become hail push upon xs praying 99
+> xs become hail reverse upon xs
+> ```
 
-Methods are invoked with the normal method-call syntax:
+---
 
-```holy
-hail method upon target
-hail method upon target praying args
-```
+## Exemplos práticos
 
-So `legion` methods are not parser exceptions. They are runtime built-ins dispatched on the target value.
-
-### `length`
-
-Returns the number of elements.
+### Iterar uma legion
 
 ```holy
 let there xs of legion of atom be hail legion praying 10, 20 and 30
-let there size of atom be hail length upon xs
+let there i  of atom be 0
+
+litany for i lesser than hail length upon xs
+    hail proclaim praying hail word_of praying hail at upon xs praying i
+    i become i plus 1
 ```
 
-### `is_empty`
-
-Returns whether the collection has no elements.
+### Construir uma legion dinamicamente
 
 ```holy
-let there be xs of legion of atom
-let there empty of dogma be hail is_empty upon xs
+let there be result of legion of atom
+let there i of atom be 1
+
+litany for i no greater than 5
+    result become hail push upon result praying i times i   -- quadrados: 1, 4, 9, 16, 25
+    i become i plus 1
+
+hail proclaim praying hail word_of praying result
 ```
 
-### `at`
-
-Returns the element at the given zero-based index.
+### Fatiar e concatenar
 
 ```holy
-let there xs of legion of atom be hail legion praying 10, 20 and 30
-let there second of atom be hail at upon xs praying 1
+let there xs   of legion of atom be hail legion praying 1, 2, 3, 4 and 5
+let there head of legion of atom be hail slice upon xs praying 0 and 2   -- [1, 2]
+let there tail of legion of atom be hail slice upon xs praying 2 and 5   -- [3, 4, 5]
+let there all  of legion of atom be hail concat upon head praying tail    -- [1, 2, 3, 4, 5]
 ```
 
-If the index is invalid, Holy raises `IndexOutOfBounds`.
+---
 
-### `push`
+## `legion` genérico
 
-Returns a new `legion` with one extra element appended.
+Você pode declarar scriptures e salms que trabalham com `legion of T`:
 
 ```holy
-let there xs of legion of atom be hail legion praying 1 and 2
-xs become hail push upon xs praying 3
+salm first of T receiving xs of legion of T reveals verdict of T and word
+    whether hail is_empty upon xs
+        reveal manifest condemned of verdict of T and word praying "legion is empty"
+    reveal manifest righteous of verdict of T and word praying hail at upon xs praying 0
 ```
 
-`push` does not mutate the inner storage in place. It follows the same value-style update model used elsewhere in Holy: the method returns a new value, and you reassign it.
-
-## Built-in methods on `word`
-
-Holy also provides built-in methods on `word`, using the same syntax.
-
-### `length`
-
-```holy
-let there s of word be "holy"
-let there size of atom be hail length upon s
-```
-
-### `is_empty`
-
-```holy
-let there s of word be ""
-let there empty of dogma be hail is_empty upon s
-```
-
-### `at`
-
-Returns the character at a zero-based index as a `word`.
-
-```holy
-let there s of word be "holy"
-let there ch of word be hail at upon s praying 2
-```
-
-If the index is invalid, Holy raises `IndexOutOfBounds`.
-
-## Notes
-
-- Built-in methods are resolved by the interpreter, not by the parser.
-- The syntax is the same as any other method call.
-- `legion` is a built-in type available everywhere; it does not need a user declaration.
-- `push` returns a new collection; it does not update the old value in place.
+`at` lança `IndexOutOfBounds` para índices fora do intervalo. `slice` com `start > end` ou `end > length` também lança `IndexOutOfBounds`.

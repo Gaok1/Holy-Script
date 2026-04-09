@@ -27,7 +27,8 @@
         { "include": "#multiword-handler" },
         { "include": "#number" },
         { "include": "#boolean" },
-        { "include": "#builtin-covenant-type" },
+        { "include": "#reveals-type" },
+        { "include": "#builtin-type" },
         { "include": "#builtin-covenant-variant" },
         { "include": "#keyword-context-marker" },
         { "include": "#keyword-control" },
@@ -63,10 +64,19 @@
             "match": "\\b(blessed|forsaken)\\b"
         },
 
-        "builtin-covenant-type": {
-            "comment": "Built-in generic covenant type keywords: grace (Option) and verdict (Result)",
+        "builtin-type": {
+            "comment": "Built-in type keywords: generic built-ins and built-in covenants",
             "name": "support.type.holy",
-            "match": "\\b(grace|verdict)\\b"
+            "match": "\\b(grace|verdict|legion)\\b"
+        },
+
+        "reveals-type": {
+            "comment": "reveals <Type> — keep return types highlighted directly after reveals",
+            "match": "\\b(reveals)\\s+(atom|fractional|word|dogma|void|grace|verdict|legion|[a-zA-Z_]\\w*)",
+            "captures": {
+                "1": { "name": "keyword.declaration.holy" },
+                "2": { "name": "entity.name.type.holy" }
+            }
         },
 
         "builtin-covenant-variant": {
@@ -332,7 +342,7 @@
 
         "of-type": {
             "comment": "of <CustomType> — highlights custom type names; excludes primitives, builtins, and context markers",
-            "match": "\\b(of)\\s+(?!atom\\b|fractional\\b|word\\b|dogma\\b|void\\b|grace\\b|verdict\\b|after\\b|thus\\b)([a-zA-Z_]\\w*)",
+            "match": "\\b(of)\\s+(?!atom\\b|fractional\\b|word\\b|dogma\\b|void\\b|grace\\b|verdict\\b|legion\\b|after\\b|thus\\b)([a-zA-Z_]\\w*)",
             "captures": {
                 "1": { "name": "keyword.other.holy" },
                 "2": { "name": "entity.name.type.holy" }

@@ -44,11 +44,11 @@ pub fn default_value(ty: &HolyType) -> Value {
 pub fn get_field(val: &Value, field: &str) -> EvalResult {
     match val {
         Value::Scripture { fields, .. } => fields.get(field).cloned().ok_or_else(|| {
-            builtin_sin("UndefinedField", format!("field '{}' not found", field))
+            builtin_sin("UndefinedField", format!("the field '{}' was never anointed upon this scripture", field))
         }),
         _ => Err(builtin_sin(
             "TypeError",
-            "field access on a non-scripture value",
+            "thou hast sought fields upon that which bears no scripture — abomination",
         )),
     }
 }
@@ -82,14 +82,14 @@ pub fn eval_binop(op: &BinOp, l: Value, r: Value) -> EvalResult {
         BinOp::Div => match (&l, &r) {
             (Int(a), Int(b)) => {
                 if *b == 0 {
-                    Err(builtin_sin("DivisionByZero", "division by zero"))
+                    Err(builtin_sin("DivisionByZero", "thou hast divided by the void — this is an abomination before the Lord"))
                 } else {
                     Ok(Int(a / b))
                 }
             }
             (Float(a), Float(b)) => {
                 if *b == 0.0 {
-                    Err(builtin_sin("DivisionByZero", "division by zero"))
+                    Err(builtin_sin("DivisionByZero", "thou hast divided by the void — this is an abomination before the Lord"))
                 } else {
                     Ok(Float(a / b))
                 }
@@ -99,7 +99,7 @@ pub fn eval_binop(op: &BinOp, l: Value, r: Value) -> EvalResult {
         BinOp::Rem => match (&l, &r) {
             (Int(a), Int(b)) => {
                 if *b == 0 {
-                    Err(builtin_sin("DivisionByZero", "division by zero"))
+                    Err(builtin_sin("DivisionByZero", "thou hast divided by the void — this is an abomination before the Lord"))
                 } else {
                     Ok(Int(a % b))
                 }
@@ -141,14 +141,14 @@ fn to_float(v: &Value) -> Option<f64> {
 }
 
 fn invalid_numeric_comparison() -> HolyError {
-    builtin_sin("TypeError", "invalid numeric comparison")
+    builtin_sin("TypeError", "thou hast compared that which is not of the sacred numbers — this comparison is profane")
 }
 
 fn type_err(op: &str, l: &Value, r: &Value) -> EvalResult {
     Err(builtin_sin(
         "TypeError",
         format!(
-            "operation '{}' not supported between {} and {}",
+            "the ritual '{}' cannot be performed upon {} and {} — an unholy union",
             op,
             value_type_name(l),
             value_type_name(r)

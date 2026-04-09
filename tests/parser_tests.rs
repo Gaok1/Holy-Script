@@ -195,6 +195,24 @@ fn invalid_and_then_comma_in_type_args_is_rejected() {
     assert!(!msg.is_empty(), "expected parse error");
 }
 
+#[test]
+fn method_call_upon_accepts_expression_target() {
+    let p = parse(
+        "scripture List\n    buff of atom\n\
+         salm show upon List reveals atom\n    reveal hail length upon buff from its\n\
+         amen\n",
+    );
+    match p.top_decls.get(1) {
+        Some(TopDecl::MethodSalm { body, .. }) => match body.first() {
+            Some(Stmt::Reveal(Expr::MethodCall { target, .. })) => {
+                assert!(matches!(&**target, Expr::FieldAccess { .. } | Expr::SelfFieldAccess { .. }));
+            }
+            other => panic!("unexpected body: {:?}", other),
+        },
+        other => panic!("unexpected decls: {:?}", other),
+    }
+}
+
 // ── Erros esperados ──────────────────────────────────────────────
 
 #[test]

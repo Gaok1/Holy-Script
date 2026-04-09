@@ -569,5 +569,94 @@
             "reveal absent of grace of ${0|atom,fractional,word,dogma|}"
         ],
         "description": "Retorna um grace::absent (None)"
+    },
+
+    "testament (import módulo)": {
+        "prefix": "testament",
+        "body": [
+            "testament ${0:Modulo}"
+        ],
+        "description": "Importa todos os símbolos de um módulo .holy"
+    },
+
+    "testament revealing (import seletivo)": {
+        "prefix": "testamentr",
+        "body": [
+            "testament ${1:Modulo} revealing ${0:Simbolo}"
+        ],
+        "description": "Importa símbolos específicos de um módulo .holy"
+    },
+
+    "read_file (com discern)": {
+        "prefix": "readfile",
+        "body": [
+            "let there ${1:resultado} of verdict of word and word be hail read_file praying ${2:\"arquivo.txt\"}",
+            "discern ${1:resultado}",
+            "\tas righteous bearing ${3:conteudo}",
+            "\t\t${0:hail proclaim praying conteudo}",
+            "\tas condemned bearing ${4:erro}",
+            "\t\thail proclaim praying \"erro ao ler: \" plus ${4:erro}"
+        ],
+        "description": "Lê arquivo e faz discern no resultado"
+    },
+
+    "write_file (com discern)": {
+        "prefix": "writefile",
+        "body": [
+            "let there ${1:resultado} of verdict of dogma and word be hail write_file praying ${2:\"arquivo.txt\"} and ${3:conteudo}",
+            "discern ${1:resultado}",
+            "\tas righteous bearing ${4:ok}",
+            "\t\t${0:hail proclaim praying \"escrito\"}",
+            "\tas condemned bearing ${5:erro}",
+            "\t\thail proclaim praying \"erro ao escrever: \" plus ${5:erro}"
+        ],
+        "description": "Escreve arquivo e faz discern no resultado"
+    },
+
+    "parse_atom (com discern)": {
+        "prefix": "parseatom",
+        "body": [
+            "let there ${1:resultado} of verdict of atom and word be hail parse_atom praying ${2:texto}",
+            "discern ${1:resultado}",
+            "\tas righteous bearing ${3:n}",
+            "\t\t${0:hail proclaim praying hail word_of praying n}",
+            "\tas condemned bearing ${4:erro}",
+            "\t\thail proclaim praying ${4:erro}"
+        ],
+        "description": "Converte word para atom com tratamento de erro via discern"
+    },
+
+    "first (com discern grace)": {
+        "prefix": "mfirst",
+        "body": [
+            "let there ${1:resultado} of grace of ${2|atom,fractional,word,dogma|} be hail first upon ${3:xs}",
+            "discern ${1:resultado}",
+            "\tas granted bearing ${4:val}",
+            "\t\t${0:hail proclaim praying hail word_of praying val}",
+            "\tas absent",
+            "\t\thail proclaim praying \"legion está vazia\""
+        ],
+        "description": "Pega o primeiro elemento de uma legion com discern grace"
+    },
+
+    "last (com discern grace)": {
+        "prefix": "mlast",
+        "body": [
+            "let there ${1:resultado} of grace of ${2|atom,fractional,word,dogma|} be hail last upon ${3:xs}",
+            "discern ${1:resultado}",
+            "\tas granted bearing ${4:val}",
+            "\t\t${0:hail proclaim praying hail word_of praying val}",
+            "\tas absent",
+            "\t\thail proclaim praying \"legion está vazia\""
+        ],
+        "description": "Pega o último elemento de uma legion com discern grace"
+    },
+
+    "split (word → legion of word)": {
+        "prefix": "msplit",
+        "body": [
+            "let there ${1:partes} of legion of word be hail split upon ${2:texto} praying ${0:\",\"}"
+        ],
+        "description": "Divide uma word por separador e guarda na legion"
     }
 }

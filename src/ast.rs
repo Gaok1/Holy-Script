@@ -36,8 +36,8 @@ pub enum Expr {
     BinOp { op: BinOp, left: Box<Expr>, right: Box<Expr> },
     /// `hail salm (of type_args)? (praying args)?`
     FnCall { name: String, type_args: Vec<HolyType>, args: Vec<Expr> },
-    /// `hail method upon target (praying args)?`
-    MethodCall { method: String, target: String, args: Vec<Expr> },
+    /// `hail method upon <expr> (praying args)?`
+    MethodCall { method: String, target: Box<Expr>, args: Vec<Expr> },
     /// `manifest Scripture (praying args)?`
     Manifest { scripture: String, args: Vec<Expr> },
     /// `manifest variant of covenant (of type_args)? (praying args)?`
@@ -94,8 +94,8 @@ pub enum Stmt {
     Assign    { name: String, val: Expr },
     /// `hail salm (of type_args)? (praying args)?`  as a statement
     FnCallStmt     { name: String, type_args: Vec<HolyType>, args: Vec<Expr> },
-    /// `hail method upon target (praying args)?`  as a statement
-    MethodCallStmt { method: String, target: String, args: Vec<Expr> },
+    /// `hail method upon <expr> (praying args)?`  as a statement
+    MethodCallStmt { method: String, target: Expr, args: Vec<Expr> },
     /// `reveal expr`  — return value from a salm
     Reveal(Expr),
     /// `whether / otherwise so / otherwise`

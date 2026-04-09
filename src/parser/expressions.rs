@@ -61,7 +61,7 @@ impl Parser {
                     }
                     t => Err(ParseError::at(
                         format!(
-                            "expected 'greater' or 'lesser' after 'no', found {}",
+                            "after 'no', the scripture demands 'greater' or 'lesser', yet '{}' was spoken",
                             token_name(&t)
                         ),
                         sp.line,
@@ -157,7 +157,7 @@ impl Parser {
                 if self.peek() != &Token::Thus {
                     return Err(ParseError::at(
                         format!(
-                            "expected 'thus' to close 'after' grouping, found {}",
+                            "the 'after' grouping must be sealed with 'thus', yet '{}' was spoken",
                             token_name(self.peek())
                         ),
                         thus_sp.line,
@@ -172,7 +172,7 @@ impl Parser {
                 let name = self.expect_ident()?;
                 if self.peek() == &Token::Upon {
                     self.advance();
-                    let target = self.expect_ident()?;
+                    let target = self.parse_expr()?;
                     let args = if self.peek() == &Token::Praying {
                         self.advance();
                         let args = self.parse_arg_list()?;
@@ -185,7 +185,7 @@ impl Parser {
                     };
                     Ok(Expr::MethodCall {
                         method: name,
-                        target,
+                        target: Box::new(target),
                         args,
                     })
                 } else {
@@ -295,7 +295,7 @@ impl Parser {
             }
             t => Err(ParseError::at(
                 format!(
-                    "{} is not a valid expression — expected: number, string, 'blessed', 'forsaken', variable, 'hail' or 'manifest'",
+                    "'{}' is not of the holy tongue — only these are worthy: number, word, 'blessed', 'forsaken', a sacred name, 'hail', or 'manifest'",
                     token_name(&t)
                 ),
                 sp.line,
@@ -317,22 +317,4 @@ impl Parser {
         })
     }
 
-    pub(super) fn parse_arg_list(&mut self) -> Result<Vec<Expr>, ParseError> {
-        let mut args = vec![self.parse_expr()?];
-        loop {
-            match self.peek() {
-                Token::Comma => {
-                    self.advance();
-                    args.push(self.parse_expr()?);
-                }
-                Token::And => {
-                    self.advance();
-                    args.push(self.parse_expr()?);
-                    break;
-                }
-                _ => break,
-            }
-        }
-        Ok(args)
-    }
 }

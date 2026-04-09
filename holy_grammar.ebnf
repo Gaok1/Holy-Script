@@ -79,7 +79,7 @@ decl        ::= "let there be" ident "of" type
 assign      ::= ident "become" expr
 
 -- invocation as a statement
-invocation  ::= "hail" ident "upon" ident ("praying" arg_list "thus"?)?        -- method_salm
+invocation  ::= "hail" ident "upon" expr ("praying" arg_list "thus"?)?         -- method_salm
             |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm
 
 -- return value from a salm
@@ -145,7 +145,7 @@ term        ::= unary (("times" | "over" | "remainder") unary)*
 unary       ::= "negate" atom | atom
 
 atom        ::= "after" expr "thus"                                              -- explicit grouping: (expr)
-            |   "hail" ident "upon" ident ("praying" arg_list "thus"?)?          -- method_salm call
+            |   "hail" ident "upon" expr ("praying" arg_list "thus"?)?           -- method_salm call
             |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm call
             |   "manifest" ident "of" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- data variant: manifest some of Option of atom praying 42
             |   "manifest" ident ("praying" arg_list "thus"?)?                   -- scripture instantiation
@@ -238,19 +238,49 @@ ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
 -- ============================================================
 --  BUILT-IN SALMS
 -- ============================================================
--- proclaim  receiving val of word    reveals void   -- print with newline
--- herald    receiving val of word    reveals void   -- print without newline
--- inquire                            reveals word   -- read a line from stdin
--- atom_of   receiving val of word    reveals atom   -- parse word → atom
--- word_of   receiving val of word    reveals word   -- convert any value → word
--- legion    receiving values...      reveals legion of T  -- build a typed collection from its arguments
+-- All built-in salms are dispatched at runtime, not at parse time.
+-- They behave exactly like user-defined salms.
 
--- Built-in methods are runtime-dispatched, not parser keywords.
--- Examples:
---   hail length upon some_word
---   hail at upon some_word praying 0
---   hail length upon some_legion
---   hail push upon some_legion praying value
+-- I/O
+-- proclaim   receiving val of word              reveals void
+-- herald     receiving val of word              reveals void
+-- inquire                                       reveals word
+-- read_file  receiving path of word             reveals verdict of word and word
+-- write_file receiving path of word and content of word  reveals verdict of dogma and word
+-- args                                          reveals legion of word
+-- exit       receiving code of atom             reveals void
+
+-- Type conversion
+-- atom_of       receiving val of word           reveals atom          -- returns 0 on failure
+-- parse_atom    receiving val of word           reveals verdict of atom and word
+-- fractional_of receiving val of any            reveals fractional
+-- word_of       receiving val of any            reveals word
+
+-- Math
+-- abs    receiving val of atom/fractional       reveals atom/fractional
+-- floor  receiving val of fractional            reveals atom
+-- ceil   receiving val of fractional            reveals atom
+-- round  receiving val of fractional            reveals atom
+-- min    receiving a and b                      reveals atom/fractional
+-- max    receiving a and b                      reveals atom/fractional
+-- pow    receiving base and exp                 reveals atom/fractional
+
+-- Collections
+-- legion  receiving values...                   reveals legion of T
+
+-- Built-in methods on word (runtime-dispatched via "hail method upon target"):
+--   length    → atom          is_empty   → dogma
+--   at        → word          slice      → word
+--   contains  → dogma         starts_with → dogma     ends_with → dogma
+--   index_of  → grace of atom to_upper   → word       to_lower  → word
+--   trim      → word          replace    → word        split     → legion of word
+
+-- Built-in methods on legion of T:
+--   length    → atom          is_empty  → dogma
+--   at        → T             first     → grace of T   last    → grace of T
+--   contains  → dogma         index_of  → grace of atom
+--   push      → legion of T   slice     → legion of T
+--   concat    → legion of T   reverse   → legion of T
 
 
 -- ============================================================

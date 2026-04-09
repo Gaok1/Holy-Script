@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::ast::HolyType;
+use crate::{ast::HolyType, interpreter::ops::default_value};
 
 use super::Value;
 
@@ -46,7 +46,8 @@ impl Env {
         self.global.get(name).map(|binding| binding.ty.clone())
     }
 
-    pub fn define(&mut self, name: &str, ty: HolyType, val: Value) {
+    pub fn define(&mut self, name: &str, ty: HolyType, val: Option<Value>) {
+        let val = val.unwrap_or(default_value(&ty));
         let binding = Binding { value: val, ty };
         if let Some(scope) = self.locals.last_mut() {
             scope.insert(name.to_string(), binding);

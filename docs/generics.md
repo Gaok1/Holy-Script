@@ -1,15 +1,17 @@
 # Generics
 
-Holy Lang supports type parameters on scriptures, covenants, and salms. Everything is **explicit** — there is no type inference. Type arguments are always written out at every call and instantiation site.
+Generics permitem escrever scriptures, covenants e salms que funcionam com **qualquer tipo**, sem duplicar código. O tipo concreto é informado em cada uso.
+
+Em Holy tudo é **explícito** — não há inferência de tipos. Os argumentos de tipo são sempre escritos em cada chamada e instanciação.
 
 ---
 
-## Declaring type parameters
+## Declarando parâmetros de tipo
 
-Use `of` followed by a comma-separated list of type parameter names after the declaration name. The final separator may also be `and`.
+Use `of` seguido de nomes de parâmetro após o nome da declaração. O último separador pode ser `and`:
 
 ```holy
--- generic scripture
+-- scripture genérica
 scripture Box of T
     value of T
 
@@ -17,13 +19,13 @@ scripture Pair of A and B
     first  of A
     second of B
 
--- generic covenant
+-- covenant genérico
 covenant Option of T
     Some
         value of T
     None
 
--- generic salm
+-- salm genérico
 salm identity of T receiving val of T reveals T
     reveal val
 
@@ -31,167 +33,165 @@ salm wrap of T receiving val of T reveals grace of T
     reveal manifest granted of grace of T praying val
 ```
 
-Type parameter names are conventional identifiers (single capital letters by convention: `T`, `E`, `A`, `B`, …).
+Os nomes dos parâmetros são convencionais — letras maiúsculas por convenção (`T`, `E`, `A`, `B`, …).
 
 ---
 
-## Passing type arguments
+## Passando argumentos de tipo
 
-At every call or instantiation site, type args are supplied explicitly with `of`. The final separator may also be `and`:
+Em cada chamada ou instanciação, passe os tipos explicitamente com `of`:
 
 ```holy
--- scripture instantiation
-let there b of Box of atom be manifest Box praying 42
+-- instanciando scriptures
+let there b of Box of atom      be manifest Box  praying 42
 let there p of Pair of atom and word be manifest Pair praying 1 and "x"
 
--- salm call
-let there x of atom be hail identity of atom praying 99
+-- chamando salms
+let there x of atom         be hail identity of atom praying 99
 let there g of grace of atom be hail wrap of atom praying 42
 
--- variant instantiation
+-- instanciando variantes de covenant
 let there o of Option of atom be manifest Some of Option of atom praying 7
 let there n of Option of atom be None of Option of atom
 ```
 
 ---
 
-## `thus` — disambiguation
+## `thus` — desambiguação
 
-`thus` is a **closing marker**. It signals to the parser that a nested generic type's argument list is complete, so the next `,` belongs to the outer context instead.
+`thus` é um **marcador de fechamento**. Ele sinaliza ao parser que a lista de argumentos de um tipo genérico aninhado terminou, de modo que o próximo `,` ou `and` pertence ao contexto externo.
 
-For a focused guide to ambiguity cases across generic types, nested calls, and grouped expressions, see [Disambiguation with `thus` and `after`](nesting.md).
+### O problema sem `thus`
 
-### The problem without `thus`
+O parser consome avidamente todos os `,` após um tipo, tratando-os como mais argumentos do tipo mais interno sendo parseado:
 
 ```holy
--- WRONG: parser reads "Stack<T, word>" then verdict has no second arg → error
+-- ERRADO: parser lê "Stack<T, word>" → verdict não tem segundo argumento
 verdict of Stack of T, word
 
--- WRONG: parser reads "Stack<atom, word>" same problem
+-- ERRADO: mesma situação
 verdict of Stack of atom, word
 ```
 
-The parser greedily consumes every `,` that follows a type, treating it as another type argument for the innermost generic type being parsed.
-
-### The solution — `thus`
+### A solução — `thus`
 
 ```holy
--- CORRECT: thus closes Stack<T>, then "and word" goes to verdict
+-- CORRETO: thus fecha Stack<T>, depois "and word" vai para verdict
 verdict of Stack of T thus and word
 
--- CORRECT: thus closes Stack<atom>
+-- CORRETO: thus fecha Stack<atom>
 verdict of Stack of atom thus and word
 ```
 
-### Simple types never need `thus`
+### Tipos simples nunca precisam de `thus`
 
 ```holy
-verdict of atom and word     -- ok: atom has no type args, no ambiguity
+verdict of atom and word     -- ok: atom não tem argumentos de tipo
 grace of word                -- ok
-verdict of T, E              -- ok: T and E are simple names with no "of"
+verdict of T and E           -- ok: T e E são nomes simples sem "of"
 ```
 
-`thus` is only needed when the type argument is itself generic **and** is followed by a separator that belongs to the outer context.
+`thus` só é necessário quando o argumento de tipo é ele mesmo genérico **e** é seguido por um separador que pertence ao contexto externo.
 
 ---
 
-## Where `thus` appears
+## Onde `thus` aparece
 
-### 1. Type annotations
+### 1. Anotações de tipo
 
-In any position where a type is written — `let there`, `salm reveals`, `receiving`, field declarations:
+Em qualquer posição onde um tipo é escrito — `let there`, `reveals`, `receiving`, campos:
 
 ```holy
--- return type
+-- tipo de retorno
 salm pop of T receiving s of Stack of T reveals verdict of Stack of T thus and word
-    ...
+    -- ...
 
--- parameter type: "s of Stack<T>" then "and val of T" is the next param
+-- parâmetro: "s of Stack<T>" depois "and val of T" é o próximo param
 salm push of T receiving s of Stack of T thus and val of T reveals Stack of T
-    ...
+    -- ...
 
--- variable declaration
+-- declaração de variável
 let there result of verdict of Stack of atom thus and word be hail pop of atom praying s
 ```
 
-### 2. Variant instantiation
+### 2. Instanciação de variantes
 
-When the type argument list of a covenant/variant is itself generic:
+Quando o argumento de tipo de um covenant/variante é ele mesmo genérico:
 
 ```holy
--- righteous carries Stack<T>, E is word
+-- righteous carrega Stack<T>, E é word
 manifest righteous of verdict of Stack of T thus and word praying newStack
 
--- granted carries grace<StackNode<T>>
+-- granted carrega StackNode<T> (thus não necessário: único argumento de grace)
 manifest granted of grace of StackNode of T praying node
--- (no thus needed here: StackNode<T> is the only type arg of grace, no following outer separator)
 ```
 
-### 3. Nested `hail` / `manifest` argument lists
+### 3. Argumentos de chamadas aninhadas
 
-When a call is used as an argument to another call and is **not the last** argument, `thus` closes the inner call's argument list:
+Quando uma chamada é usada como argumento de outra e **não é o último argumento**, `thus` fecha a lista de argumentos da chamada interna:
 
 ```holy
--- add(double(3), 1) — thus closes double's args before "and 1"
+-- add(double(3), 1) — thus fecha os args de double antes de "and 1"
 hail add praying hail double praying 3 thus and 1
 
--- a(b(c(1)), 2) — first thus closes c, second thus closes b
+-- a(b(c(1)), 2) — primeiro thus fecha c, segundo thus fecha b
 hail a praying hail b praying hail c praying 1 thus thus and 2
 ```
 
-Without `thus`, `and 1` would be parsed as a second argument to `double`. See [Disambiguation with `thus` and `after`](nesting.md#2-disambiguating-nested-calls).
+Sem `thus`, `and 1` seria parseado como segundo argumento de `double`.
 
-### 4. Expression grouping — `after … thus`
+### 4. Agrupamento de expressões — `after … thus`
 
-`after` opens a sub-expression and `thus` closes it, equivalent to parentheses:
+`after` abre um sub-grupo e `thus` o fecha, equivalente a parênteses:
 
 ```holy
-after 3 times 5 thus            -- (3 * 5) = 15
-5 plus after 3 times 2 thus     -- 5 + (3 * 2) = 11
+after 3 times 5 thus           -- (3 * 5) = 15
+5 plus after 3 times 2 thus    -- 5 + (3 * 2) = 11
 ```
 
-See also [Disambiguation with `thus` and `after`](nesting.md#1-disambiguating-expression-precedence-with-after).
+Veja [Aninhamento](nesting.md) para todos os casos de desambiguação.
 
 ---
 
-## `thus` context rules
+## Regras do `thus`
 
-Each `thus` pops exactly **one** open context. Contexts are:
+Cada `thus` fecha exatamente **um** contexto aberto. Contextos possíveis:
 
-| Opened by | Closed by |
-|-----------|-----------|
-| `of` in a generic type arg | `thus` inside `parse_type` |
-| `praying` in a call | `thus` after the arg list |
-| `after` | `thus` that follows the expression |
+| Aberto por | Fechado por |
+|------------|-------------|
+| `of` em argumento de tipo genérico | `thus` dentro da análise de tipo |
+| `praying` em uma chamada | `thus` após a lista de argumentos |
+| `after` | `thus` que segue a expressão |
 
-A `thus` with no matching open context is a syntax error.
+Um `thus` sem contexto aberto correspondente é erro de sintaxe.
 
 ---
 
-## Type erasure at runtime
+## Apagamento de tipos em runtime
 
-Type parameters are erased at runtime. The interpreter does **not** enforce generic constraints for:
+Parâmetros de tipo são apagados em runtime. O interpreter **não** verifica constraints genéricos para:
 
-- User-defined scriptures and covenants with type params
-- Generic salm parameters typed with an abstract param (e.g. `T`)
+- Scriptures e covenants definidos pelo usuário com parâmetros de tipo
+- Parâmetros de salm tipados com um parâmetro abstrato (ex: `T`)
 
-It **does** enforce concrete types:
+Ele **verifica** tipos concretos:
 
 ```holy
--- TypeError: granted of grace of atom expects atom, got word
-manifest granted of grace of atom praying "hello"
+-- TypeError: granted of grace of atom espera atom, recebeu word
+manifest granted of grace of atom praying "olá"
 
--- OK: T is abstract, no check
+-- OK: T é abstrato, sem verificação
 salm identity of T receiving val of T reveals T
     reveal val
-hail identity of atom praying "any value"   -- runtime: accepted
+
+hail identity of atom praying "qualquer valor"   -- runtime: aceito
 ```
 
-Built-in `grace` and `verdict` have first-class type enforcement — their concrete type args are checked at instantiation.
+`grace` e `verdict` embutidos têm verificação de tipo em runtime — seus argumentos de tipo concretos são checados na instanciação.
 
 ---
 
-## Full example
+## Exemplo completo — pilha genérica
 
 ```holy
 scripture Stack of T
@@ -214,7 +214,7 @@ salm peek of T receiving s of Stack of T reveals verdict of T and word
         as granted bearing node
             reveal manifest righteous of verdict of T and word praying value from node
         as absent
-            reveal manifest condemned of verdict of T and word praying "stack is empty"
+            reveal manifest condemned of verdict of T and word praying "pilha vazia"
 
 let there s of Stack of atom be hail emptyStack of atom
 s become hail push of atom praying s and 10
@@ -223,7 +223,7 @@ s become hail push of atom praying s and 20
 let there peeked of verdict of atom and word be hail peek of atom praying s
 discern peeked
     as righteous bearing value
-        hail proclaim praying hail word_of praying value   -- 20
+        hail proclaim praying hail word_of praying value   -- "20"
     as condemned bearing reason
         hail proclaim praying reason
 

@@ -1,21 +1,21 @@
-# Sins
+# Sins — Exceções
 
-Sins are the exception mechanism of Holy Lang. A sin is thrown with `transgress` and caught with `confess`/`answer for`.
+Sins são o mecanismo de exceção de Holy. Um sin é lançado com `transgress` e capturado com `confess`/`answer for`. Se não capturado, o programa encerra com uma mensagem de erro.
 
 ---
 
-## Declaring a sin
+## Declarando um sin
 
 ```holy
 sin Failure
     message of word
 
 sin OutOfBounds
-    index   of atom
-    max     of atom
+    index of atom
+    max   of atom
 ```
 
-A sin with no fields is valid — the type alone is enough:
+Um sin sem campos também é válido — o tipo já é informação suficiente:
 
 ```holy
 sin NotFound
@@ -23,100 +23,132 @@ sin NotFound
 
 ---
 
-## Throwing — `transgress`
+## Lançando — `transgress`
 
 ```holy
-transgress Failure praying "something went wrong"
+transgress Failure praying "algo deu errado"
 transgress OutOfBounds praying index, max
 transgress OutOfBounds praying index and max
 transgress NotFound
 ```
 
-Arguments are in field declaration order. As with other Holy lists, the final separator may be `and`. `praying` is omitted if the sin has no fields.
+- Os argumentos seguem a **ordem de declaração dos campos**.
+- O último separador pode ser `and`.
+- `praying` é omitido se o sin não tem campos.
 
-`transgress` immediately halts execution of the current block and propagates up the call stack until caught or the program terminates.
+`transgress` interrompe a execução do bloco atual e propaga o sin pela pilha de chamadas até ser capturado ou encerrar o programa.
 
 ---
 
-## Catching — `confess` / `answer for` / `absolve`
+## Capturando — `confess` / `answer for` / `absolve`
 
 ```holy
 confess
-    -- try block
+    -- bloco try
     transgress Failure praying "oops"
 answer for Failure
-    -- handler: sin type matched but instance not bound
-    hail proclaim praying "a failure occurred"
+    -- sem ligar a instância: só sabe o tipo
+    hail proclaim praying "uma falha ocorreu"
 answer for OutOfBounds as err
-    -- 'as name' binds the sin instance (it's a scripture-like value)
-    hail proclaim praying "out of bounds: index " plus hail word_of praying index from err
+    -- 'as nome' liga o sin à variável err
+    hail proclaim praying "fora dos limites: índice " plus hail word_of praying index from err
 absolve
-    -- finally block: always runs, with or without an error
-    hail proclaim praying "cleanup"
+    -- bloco finally: sempre executa, com ou sem erro
+    hail proclaim praying "limpeza"
 ```
 
-Rules:
-- `confess` opens the try block.
-- At least one `answer for SinType` clause is required.
-- `as name` is optional; use it when you need to access the sin's fields.
-- `absolve` (finally) is optional and appears last.
-- Multiple `answer for` clauses match different sin types; the first match wins.
-- If no clause matches, the sin propagates further up the stack.
+Regras:
+- `confess` abre o bloco try.
+- Pelo menos um `answer for TipoDoSin` é obrigatório.
+- `as nome` é opcional; use quando precisar acessar os campos do sin.
+- `absolve` (finally) é opcional e vem por último.
+- Múltiplos `answer for` cobrem tipos diferentes; o primeiro que combinar é executado.
+- Se nenhum combinar, o sin continua propagando pela pilha.
 
 ---
 
-## Accessing sin fields
+## Acessando campos do sin
 
-Inside an `answer for … as name` block, the bound variable behaves like a scripture instance:
+Dentro de um bloco `answer for … as nome`, a variável ligada se comporta como uma scripture:
 
 ```holy
 sin ParseError
-    input   of word
-    column  of atom
+    input  of word
+    column of atom
 
 confess
     transgress ParseError praying "abc" and 3
 answer for ParseError as e
-    hail proclaim praying "bad input: " plus input from e
-    hail proclaim praying "at column: " plus hail word_of praying column from e
+    hail proclaim praying "entrada inválida: " plus input from e
+    hail proclaim praying "na coluna: " plus hail word_of praying column from e
 ```
 
 ---
 
-## Built-in sins
+## Sins embutidos
 
-The runtime raises these sins automatically for common errors. They can be caught with `answer for`:
+O runtime lança estes sins automaticamente para erros comuns. Todos podem ser capturados com `answer for`:
 
-| Sin name                  | When raised |
-|---------------------------|-------------|
-| `DivisionByZero`          | `a over 0` or `a remainder 0` |
-| `TypeError`               | value does not match declared type |
-| `InvalidArgumentCount`    | wrong number of arguments to a salm or scripture |
-| `UndefinedVariable`       | variable not declared in scope |
-| `UndefinedSalm`           | `hail` of an undeclared salm name |
-| `UndefinedField`          | `from` on a non-existent field |
-| `IndexOutOfBounds`        | `at` on a `word` or `legion` with an invalid index |
-| `UndefinedSin`            | `transgress` of an undeclared sin |
-| `UndefinedType`           | type annotation refers to an unknown type |
-| `InvalidDiscern`          | `discern` on a non-covenant value, or no branch matched |
-| `InvalidContext`          | `its` used outside a method salm |
+| Nome do Sin               | Quando é lançado |
+|---------------------------|-----------------|
+| `DivisionByZero`          | `a over 0` ou `a remainder 0` |
+| `TypeError`               | valor não corresponde ao tipo declarado |
+| `InvalidArgumentCount`    | número errado de argumentos |
+| `UndefinedVariable`       | variável não declarada no escopo |
+| `UndefinedSalm`           | `hail` de um salm não declarado |
+| `UndefinedField`          | `from` em um campo inexistente |
+| `IndexOutOfBounds`        | `at` em `word` ou `legion` com índice inválido |
+| `UndefinedSin`            | `transgress` de um sin não declarado |
+| `UndefinedType`           | anotação de tipo referencia tipo desconhecido |
+| `InvalidDiscern`          | `discern` em valor não-covenant, ou nenhum ramo combinou |
+| `InvalidContext`          | `its` usado fora de um method salm |
 
 ```holy
 confess
-    let there n of atom be hail atom_of praying "not a number"
+    let there n of atom be hail atom_of praying "não é número"
     let there result of atom be 100 over n
 answer for DivisionByZero
-    hail proclaim praying "cannot divide by zero"
-answer for TypeError as e
-    hail proclaim praying "type error"
+    hail proclaim praying "não é possível dividir por zero"
+answer for TypeError
+    hail proclaim praying "tipo inválido"
 ```
 
 ---
 
-## Sin propagation
+## Propagação de sins
 
-If a sin is not caught anywhere in the call stack, the program terminates with an error message:
+Se um sin não for capturado em nenhum ponto da pilha, o programa encerra:
 
 ```
-error: unhandled sin: Failure (something went wrong)
+error: unhandled sin: Failure (algo deu errado)
+```
+
+---
+
+## Exemplo completo
+
+```holy
+sin DivisionError
+    message of word
+
+salm safeDivide receiving a of atom, b of atom reveals atom
+    whether b is 0
+        transgress DivisionError praying "divisor não pode ser zero"
+    reveal a over b
+
+confess
+    let there result of atom be hail safeDivide praying 10, 0
+    hail proclaim praying hail word_of praying result
+answer for DivisionError as e
+    hail proclaim praying "Erro: " plus message from e
+absolve
+    hail proclaim praying "fim da operação"
+
+amen
+```
+
+Saída:
+```
+Erro: divisor não pode ser zero
+fim da operação
 ```

@@ -13,7 +13,7 @@ function activate(context) {
         }
 
         terminal.show(true);
-        terminal.sendText(`holy "${file}"`);
+        terminal.sendText(`holy --color "${file}"`);
     });
 
     context.subscriptions.push(run);

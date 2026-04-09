@@ -46,7 +46,7 @@ answer for DivisionByZero as err
     caught become message from err
 amen
 "#);
-    assert_eq!(get_str(&i, "caught"), "division by zero");
+    assert_eq!(get_str(&i, "caught"), "thou hast divided by the void — this is an abomination before the Lord");
 }
 
 // ── Condicional ──────────────────────────────────────────────────
@@ -209,6 +209,46 @@ amen
 }
 
 #[test]
+fn method_call_upon_field_access_expression_works() {
+    let i = run(r#"scripture List
+    buff of legion of atom
+
+salm new_list receiving val of atom reveals List
+    reveal manifest List praying hail legion praying val
+
+salm pushed upon List receiving val of atom reveals List
+    reveal manifest List praying hail push upon buff from its praying val
+
+let there list of List be hail new_list praying 2
+list become hail pushed upon list praying 20
+let there len of atom be hail length upon buff from list
+let there last of atom be hail at upon buff from list praying 1
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 2);
+    assert_eq!(get_int(&i, "last"), 20);
+}
+
+#[test]
+fn concat_upon_field_access_expression_works() {
+    let i = run(r#"scripture List
+    buff of legion of atom
+
+salm merged upon List receiving other of legion of atom reveals List
+    reveal manifest List praying hail concat upon buff from its praying other
+
+let there list of List be manifest List praying hail legion praying 2 and 3
+let there extra of legion of atom be hail legion praying 5 and 8
+list become hail merged upon list praying extra
+let there len of atom be hail length upon buff from list
+let there last of atom be hail at upon buff from list praying 3
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 4);
+    assert_eq!(get_int(&i, "last"), 8);
+}
+
+#[test]
 fn salm_argument_type_is_checked() {
     let msg = run_err(r#"salm add_one receiving a of atom reveals atom
     reveal a plus 1
@@ -274,6 +314,33 @@ amen
 }
 
 #[test]
+fn legion_slice_returns_sub_legion() {
+    let i = run(r#"let there xs of legion of atom be hail legion praying 10, 20, 30 and 40
+let there middle of legion of atom be hail slice upon xs praying 1 and 3
+let there len of atom be hail length upon middle
+let there first of atom be hail at upon middle praying 0
+let there second of atom be hail at upon middle praying 1
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 2);
+    assert_eq!(get_int(&i, "first"), 20);
+    assert_eq!(get_int(&i, "second"), 30);
+}
+
+#[test]
+fn legion_concat_returns_combined_legion() {
+    let i = run(r#"let there left of legion of atom be hail legion praying 1 and 2
+let there right of legion of atom be hail legion praying 3 and 4
+let there both of legion of atom be hail concat upon left praying right
+let there len of atom be hail length upon both
+let there last of atom be hail at upon both praying 3
+amen
+"#);
+    assert_eq!(get_int(&i, "len"), 4);
+    assert_eq!(get_int(&i, "last"), 4);
+}
+
+#[test]
 fn legion_rejects_wrong_element_type_on_declaration() {
     let msg = run_err(r#"let there xs of legion of atom be hail legion praying 1 and "oops"
 amen
@@ -289,7 +356,27 @@ xs become hail push upon xs praying "oops"
 amen
 "#);
     assert!(msg.contains("TypeError"), "got: {msg}");
-    assert!(msg.contains("invalid legion element"), "got: {msg}");
+    assert!(msg.contains("profane and unworthy of the legion"), "got: {msg}");
+}
+
+#[test]
+fn legion_concat_rejects_wrong_legion_type() {
+    let msg = run_err(r#"let there left of legion of atom be hail legion praying 1 and 2
+let there right of legion of word be hail legion praying "a" and "b"
+let there both of legion of atom be hail concat upon left praying right
+amen
+"#);
+    assert!(msg.contains("TypeError"), "got: {msg}");
+    assert!(msg.contains("unworthy of the sacred union"), "got: {msg}");
+}
+
+#[test]
+fn legion_slice_reports_bounds_errors() {
+    let msg = run_err(r#"let there xs of legion of atom be hail legion praying 1, 2 and 3
+let there bad of legion of atom be hail slice upon xs praying 2 and 9
+amen
+"#);
+    assert!(msg.contains("IndexOutOfBounds"), "got: {msg}");
 }
 
 #[test]

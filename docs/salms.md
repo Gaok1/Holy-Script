@@ -1,10 +1,10 @@
 # Salms
 
-Salms are functions. They optionally receive parameters, always declare a return type, and return a value with `reveal`.
+Salms são funções. Cada salm declara explicitamente seus parâmetros e tipo de retorno, e retorna um valor com `reveal`.
 
 ---
 
-## Declaration
+## Declaração básica
 
 ```holy
 salm add receiving a of atom, b of atom reveals atom
@@ -14,34 +14,50 @@ salm greet reveals void
     hail proclaim praying "Hail!"
 ```
 
-- `receiving param_list` is optional (omit if no parameters).
-- `reveals type` is required; use `void` when the salm produces no value.
-- The body is an indented block with at least one statement.
-- Lists in Holy may use `and` for the final separator: `a and b`, `a, b and c`.
+- `receiving param_list` — opcional; omita se não houver parâmetros.
+- `reveals tipo` — obrigatório; use `void` quando o salm não produz valor.
+- O corpo é um bloco indentado com pelo menos um statement.
+- Em listas Holy, o separador final pode ser `and`: `a and b`, `a, b and c`.
 
 ---
 
-## Parameters
+## Chamando um salm — `hail`
 
 ```holy
-salm describe receiving name of word, age of atom, active of dogma reveals word
-    reveal name plus " (" plus hail word_of praying age plus ")"
+-- sem argumentos
+hail greet
+
+-- com argumentos
+let there result of atom be hail add praying 3, 5
+let there result of atom be hail add praying 3 and 5   -- equivalente
+
+-- como statement (ignora o retorno)
+hail proclaim praying "done"
 ```
 
-There is no variadic syntax. Each parameter has an explicit name and type.
+### Chamadas aninhadas
 
-The final parameter separator may also be `and`:
+Um salm pode ser argumento de outro:
 
 ```holy
-salm describe receiving name of word, age of atom and active of dogma reveals word
-    reveal name
+-- proclaim(word_of(42))
+hail proclaim praying hail word_of praying 42
 ```
+
+Quando a chamada interna **não é o último argumento** da externa, use `thus` para fechá-la:
+
+```holy
+-- add(double(3), 1) = 7
+let there y of atom be hail add praying hail double praying 3 thus and 1
+```
+
+Sem o `thus`, `and 1` seria consumido como segundo argumento de `double`. Veja [Aninhamento](nesting.md) para todos os casos.
 
 ---
 
-## Return value — `reveal`
+## `reveal` — retorno
 
-`reveal expr` returns a value and exits the salm immediately.
+`reveal expr` retorna um valor e encerra o salm imediatamente:
 
 ```holy
 salm max receiving a of atom, b of atom reveals atom
@@ -50,45 +66,28 @@ salm max receiving a of atom, b of atom reveals atom
     reveal b
 ```
 
-A `void` salm may omit `reveal` entirely (falls off the end) or use `reveal` with no expression — but the simplest practice is to just let the block end naturally.
+`reveal` pode aparecer em qualquer ponto do corpo — dentro de `whether`, `discern`, `litany`, etc.
+
+Um salm `void` pode omitir `reveal` completamente (encerra ao chegar no fim do bloco).
 
 ---
 
-## Calling a salm — `hail`
+## Parâmetros
+
+Cada parâmetro tem nome e tipo explícitos. O separador final pode ser `and`:
 
 ```holy
--- no arguments
-hail greet
-
--- with arguments
-let there sum of atom be hail add praying 3, 5
-
--- final separator may use 'and' instead of ','
-let there sum of atom be hail add praying 3 and 5
+salm describe receiving name of word, age of atom and score of fractional reveals word
+    reveal name plus " (" plus hail word_of praying age plus ")"
 ```
 
-### Nested calls
-
-A salm call can be used as an argument to another call:
-
-```holy
-hail proclaim praying hail word_of praying 42
-```
-
-When a nested call is not the last argument, use `thus` to close it so the `and` belongs to the outer call:
-
-```holy
--- add(double(3), 1) = 7
-let there y of atom be hail add praying hail double praying 3 thus and 1
-```
-
-Without `thus`, `and 1` would be consumed as a second argument to `double`. See [Disambiguation with `thus` and `after`](nesting.md#2-disambiguating-nested-calls) and [Generics — `thus`](generics.md#thus--disambiguation).
+Não existe sintaxe variádica. Se precisar de um número variável de elementos, passe uma `legion`.
 
 ---
 
-## Generic salms
+## Salms genéricos
 
-Salms can declare type parameters with `of` after their name:
+Declare parâmetros de tipo com `of` após o nome do salm:
 
 ```holy
 salm identity of T receiving val of T reveals T
@@ -98,20 +97,20 @@ salm wrap of T receiving val of T reveals grace of T
     reveal manifest granted of grace of T praying val
 ```
 
-Type args are passed explicitly at the call site:
+Passe os tipos explicitamente na chamada:
 
 ```holy
 let there g of grace of atom be hail wrap of atom praying 42
 let there w of grace of word be hail wrap of word praying "hello"
 ```
 
-Type parameters are erased at runtime — the interpreter accepts any value for an abstract type param without enforcing the type. Concrete types (`atom`, `word`, registered scriptures/covenants) are still checked.
+Parâmetros de tipo são apagados em runtime — o interpreter aceita qualquer valor para um tipo abstrato sem checar. Tipos concretos (`atom`, `word`, scriptures/covenants registrados) continuam sendo verificados.
 
 ---
 
 ## Method salms
 
-Declared with `upon TypeName`. See [Scriptures — Method salms](scriptures.md#method-salms).
+Declarados com `upon TipoAlvo`. Veja [Scriptures — Method salms](scriptures.md#method-salms).
 
 ```holy
 salm area upon Rectangle reveals fractional
@@ -122,102 +121,80 @@ hail area upon rect
 
 ---
 
-## `reveal` as an expression
+## Salms embutidos
 
-`reveal` terminates the current salm. It can appear anywhere inside the body, including inside a `whether` or `discern` branch.
+Disponíveis em todo programa sem declaração:
+
+### I/O
+
+| Salm | Retorna | Descrição |
+|------|---------|-----------|
+| `proclaim` | `void` | Imprime com quebra de linha |
+| `herald` | `void` | Imprime sem quebra de linha |
+| `inquire` | `word` | Lê uma linha do stdin |
+| `read_file` | `verdict of word and word` | Lê arquivo; righteous(conteúdo) ou condemned(erro) |
+| `write_file` | `verdict of dogma and word` | Escreve arquivo; righteous(blessed) ou condemned(erro) |
+| `args` | `legion of word` | Argumentos do programa passados na linha de comando |
+| `exit` | `void` | Encerra o programa com código de saída |
+
+### Conversão de tipo
+
+| Salm | Retorna | Descrição |
+|------|---------|-----------|
+| `atom_of` | `atom` | Converte texto para inteiro (0 se inválido) |
+| `parse_atom` | `verdict of atom and word` | Converte texto para inteiro com resultado |
+| `fractional_of` | `fractional` | Converte para decimal |
+| `word_of` | `word` | Converte qualquer valor para texto |
+
+### Matemática
+
+| Salm | Retorna | Descrição |
+|------|---------|-----------|
+| `abs` | `atom`/`fractional` | Valor absoluto |
+| `floor` | `atom` | Arredonda para baixo |
+| `ceil` | `atom` | Arredonda para cima |
+| `round` | `atom` | Arredonda para o mais próximo |
+| `min` | `atom`/`fractional` | Menor de dois valores |
+| `max` | `atom`/`fractional` | Maior de dois valores |
+| `pow` | `atom`/`fractional` | Potenciação |
+
+### Coleções
+
+| Salm | Retorna | Descrição |
+|------|---------|-----------|
+| `legion` | `legion of T` | Cria uma legion a partir dos argumentos |
 
 ```holy
-salm sign receiving n of atom reveals word
-    whether n greater than 0
-        reveal "positive"
-    whether n lesser than 0
-        reveal "negative"
-    reveal "zero"
-```
-
----
-
-## Built-in salms
-
-These salms are available in every program without declaration.
-
-| Salm       | Signature                        | Description                          |
-|------------|----------------------------------|--------------------------------------|
-| `proclaim` | `receiving val of word → void`   | Print `val` followed by a newline    |
-| `herald`   | `receiving val of word → void`   | Print `val` without a newline        |
-| `inquire`  | `→ word`                         | Read a line from stdin               |
-| `atom_of`  | `receiving val of word → atom`   | Parse a `word` as an integer         |
-| `word_of`  | `receiving val of any → word`    | Convert any value to its string form |
-| `legion`   | `receiving values of T... → legion of T` | Build a typed collection from its arguments |
-
-All must be called with `hail`:
-
-```holy
+-- I/O
 hail proclaim praying "Hello, world!"
-hail herald praying "no newline"
+hail herald   praying "sem quebra"
 let there line of word be hail inquire
-let there n of atom be hail atom_of praying line
-let there s of word be hail word_of praying 3.14
+let there a    of legion of word be hail args
+
+-- arquivo
+let there r of verdict of word and word be hail read_file praying "dados.txt"
+hail write_file praying "saida.txt" and "conteúdo"
+
+-- encerrar
+hail exit praying 0
+
+-- conversão
+let there n  of atom         be hail atom_of praying "42"
+let there r  of verdict of atom and word be hail parse_atom praying "abc"
+let there f  of fractional   be hail fractional_of praying 7
+let there s  of word         be hail word_of praying 3.14
 let there xs of legion of atom be hail legion praying 1, 2 and 3
+
+-- matemática
+hail proclaim praying hail word_of praying hail abs praying negate 5   -- 5
+hail proclaim praying hail word_of praying hail floor praying 3.9      -- 3
+hail proclaim praying hail word_of praying hail pow praying 2 and 10   -- 1024
+hail proclaim praying hail word_of praying hail min praying 4 and 9    -- 4
 ```
 
-`proclaim` and `herald` accept a `word`; pass any other type through `word_of` first:
+`proclaim` e `herald` recebem `word`. Para imprimir outros tipos, converta com `word_of` primeiro:
 
 ```holy
 let there x of atom be 42
 hail proclaim praying hail word_of praying x
-```
-
-## Built-in methods
-
-Some runtime values expose methods without a user declaration.
-
-### `word`
-
-```holy
-let there s of word be "holy"
-let there len of atom be hail length upon s
-let there second of word be hail at upon s praying 1
-let there empty of dogma be hail is_empty upon s
-```
-
-Supported built-in methods on `word`:
-
-| Method                 | Returns | Meaning |
-|------------------------|---------|---------|
-| `hail length upon s`   | `atom`  | number of characters |
-| `hail is_empty upon s` | `dogma` | whether the word is empty |
-| `hail at upon s praying i` | `word` | character at index `i` |
-
-`at` raises `IndexOutOfBounds` for an invalid index.
-
-### `legion of T`
-
-```holy
-let there xs of legion of atom be hail legion praying 10, 20 and 30
-let there len of atom be hail length upon xs
-let there first of atom be hail at upon xs praying 0
-xs become hail push upon xs praying 40
-```
-
-Supported built-in methods on `legion`:
-
-| Method                  | Returns         | Meaning |
-|-------------------------|-----------------|---------|
-| `hail length upon xs`   | `atom`          | number of elements |
-| `hail is_empty upon xs` | `dogma`         | whether the legion has no elements |
-| `hail at upon xs praying i` | `T`        | element at index `i` |
-| `hail push upon xs praying v` | `legion of T` | returns a new legion with `v` appended |
-
-`push` does not mutate the existing value in place. Like other Holy values, you reassign the variable to the returned value.
-
----
-
-## Salm as a statement
-
-A salm call can stand alone as a statement (ignoring the return value):
-
-```holy
-hail proclaim praying "done"
-hail sort upon list
 ```

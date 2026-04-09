@@ -1,24 +1,6 @@
 use super::*;
 
 impl Parser {
-    pub(super) fn parse_block(&mut self) -> Result<Vec<Stmt>, ParseError> {
-        let sp = self.sp().clone();
-        self.expect(&Token::Indent)?;
-        let mut stmts = Vec::new();
-        while !matches!(self.peek(), Token::Dedent | Token::Eof) {
-            stmts.push(self.parse_stmt()?);
-        }
-        self.expect(&Token::Dedent)?;
-        if stmts.is_empty() {
-            return Err(ParseError::at(
-                "empty block — add at least one statement",
-                sp.line,
-                sp.col,
-            ));
-        }
-        Ok(stmts)
-    }
-
     pub(super) fn parse_stmt(&mut self) -> Result<Stmt, ParseError> {
         let sp = self.sp().clone();
         match self.peek().clone() {
@@ -41,7 +23,7 @@ impl Parser {
             Token::Ident(_) => self.parse_assign(),
             t => Err(ParseError::at(
                 format!(
-                    "{} cannot start a statement — use 'let there', 'hail', 'whether', 'litany for', 'confess', 'discern', 'transgress', 'reveal', 'forsake', 'ascend' or a variable followed by 'become'",
+                    "'{}' is not a worthy beginning for a statement — speak one of these sacred words: 'let there', 'hail', 'whether', 'litany for', 'confess', 'discern', 'transgress', 'reveal', 'forsake', 'ascend', or a name followed by 'become'",
                     token_name(&t)
                 ),
                 sp.line,
@@ -77,7 +59,7 @@ impl Parser {
             let found = self.peek().clone();
             return Err(ParseError::at(
                 format!(
-                    "expected 'become' to reassign '{}', found {} — to call a function use 'hail'",
+                    "'become' must be spoken to reassign '{}', yet '{}' was uttered — to invoke a salm, speak 'hail'",
                     name,
                     token_name(&found)
                 ),
@@ -95,7 +77,7 @@ impl Parser {
         let name = self.expect_ident()?;
         if self.peek() == &Token::Upon {
             self.advance();
-            let target = self.expect_ident()?;
+            let target = self.parse_expr()?;
             let args = if self.peek() == &Token::Praying {
                 self.advance();
                 let args = self.parse_arg_list()?;
@@ -200,7 +182,7 @@ impl Parser {
         if handlers.is_empty() {
             let sp = self.sp().clone();
             return Err(ParseError::at(
-                "'confess' block requires at least one 'answer for <SinType>'",
+                "a 'confess' block must bear at least one 'answer for <SinType>' — confession without absolution is hollow",
                 sp.line,
                 sp.col,
             ));
@@ -258,7 +240,7 @@ impl Parser {
         if branches.is_empty() {
             let sp = self.sp().clone();
             return Err(ParseError::at(
-                "'discern' block requires at least one 'as <Variant>' clause",
+                "a 'discern' block must bear at least one 'as <Variant>' clause — judgment without branches is an abomination",
                 sp.line,
                 sp.col,
             ));

@@ -1,103 +1,93 @@
-use std::io::IsTerminal;
+mod reporter;
+
 use std::{env, fs, process};
 
 use holy_script::interpreter::Interpreter;
 use holy_script::lexer::{Token, tokenize};
-use holy_script::parser::{ParseError, Parser};
+use holy_script::parser::Parser;
 use holy_script::tree;
 
-fn use_color() -> bool {
-    std::io::stderr().is_terminal() && env::var_os("NO_COLOR").is_none()
-}
-
-fn red_bold(text: &str) -> String {
-    if use_color() {
-        format!("\x1b[1;31m{}\x1b[0m", text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn red(text: &str) -> String {
-    if use_color() {
-        format!("\x1b[31m{}\x1b[0m", text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn yellow(text: &str) -> String {
-    if use_color() {
-        format!("\x1b[33m{}\x1b[0m", text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn gray(text: &str) -> String {
-    if use_color() {
-        format!("\x1b[90m{}\x1b[0m", text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn bold(text: &str) -> String {
-    if use_color() {
-        format!("\x1b[1m{}\x1b[0m", text)
-    } else {
-        text.to_string()
-    }
-}
-
-fn report_parse_error(source: &str, e: &ParseError) {
-    eprintln!("\n{} - line {}, column {}:", red_bold("syntax error"), e.line, e.col);
-
-    if e.line > 0 {
-        if let Some(line_src) = source.lines().nth(e.line - 1) {
-            eprintln!("  {} | {}", gray(&format!("{:>4}", e.line)), line_src);
-            let arrow_pad = e.col.saturating_sub(1);
-            eprintln!("       {}", red_bold(&format!("{}^", " ".repeat(arrow_pad))));
-        }
-    }
-
-    eprintln!("  {}\n", yellow(&e.message));
-}
+use reporter::{bold, gray, red_bold, report_parse_error};
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
+    let force_color = args.iter().any(|a| a == "--color");
+    reporter::init_color(force_color);
+
     let show_tree = args.iter().any(|a| a == "--tree" || a == "-t");
     let file = args.iter().skip(1).find(|a| !a.starts_with('-')).unwrap_or_else(|| {
-        eprintln!("Usage: holy [--tree] <file.holy>");
+        eprintln!("Usage: holy [--tree] [--color] <file.holy>");
         process::exit(1);
     });
 
     let source = fs::read_to_string(file).unwrap_or_else(|e| {
-        eprintln!("Error reading '{}': {}", file, e);
+        eprintln!("The sacred scroll '{}' could not be unsealed: {}", file, e);
         process::exit(1);
     });
 
-    // Lex
     let tokens = tokenize(&source);
 
-    // Validate 'amen'
+    validate_amen(&source, &tokens);
+
+    let mut parser = Parser::new(tokens);
+    let program = parser.parse_program().unwrap_or_else(|e| {
+        report_parse_error(&source, &e);
+        process::exit(1);
+    });
+
+    if show_tree {
+        tree::print_program(&program);
+        return;
+    }
+
+    // Collect everything after the script filename as script arguments.
+    let file_pos = args.iter().skip(1).position(|a| !a.starts_with('-')).unwrap_or(0) + 1;
+    let script_args = args.get(file_pos + 1..).unwrap_or(&[]).to_vec();
+
+    let source_dir = std::path::Path::new(file)
+        .parent()
+        .unwrap_or(std::path::Path::new("."))
+        .to_path_buf();
+
+    let mut interp = Interpreter::new()
+        .with_script_args(script_args)
+        .with_source_dir(source_dir);
+
+    if let Err(e) = interp.run(&program) {
+        eprintln!("{}: {}", reporter::red("O Profanation!"), e);
+        process::exit(1);
+    }
+}
+
+fn validate_amen(source: &str, tokens: &[holy_script::lexer::Spanned]) {
     let amens: Vec<_> = tokens.iter().filter(|s| s.token == Token::Amen).collect();
+
     match amens.len() {
         0 => {
             eprintln!(
-                "\n{}: every holy program must end with {}\n",
-                red_bold("error"),
-                bold("amen")
+                "\n{}: every holy scripture must be sealed with {}\n",
+                red_bold("Blasphemy!"),
+                bold("amen"),
             );
             process::exit(1);
         }
-        1 => {} // ok
+        1 => {
+            let last_meaningful = tokens.iter().rev().find(|s| s.token != Token::Eof);
+            if last_meaningful.map(|s| &s.token) != Some(&Token::Amen) {
+                eprintln!(
+                    "\n{}: every holy scripture must be sealed with {}\n",
+                    red_bold("Blasphemy!"),
+                    bold("amen"),
+                );
+                process::exit(1);
+            }
+        }
         n => {
             eprintln!(
-                "\n{}: found {} 'amen' tokens - exactly one is required at the end:",
-                red_bold("error"),
-                n
+                "\n{}: the sacred seal 'amen' was spoken {} times — only one may close the scripture:",
+                red_bold("Blasphemy!"),
+                n,
             );
             for sp in &amens {
                 if let Some(line_src) = source.lines().nth(sp.line - 1) {
@@ -108,24 +98,5 @@ fn main() {
             eprintln!();
             process::exit(1);
         }
-    }
-
-    // Parse
-    let mut p = Parser::new(tokens);
-    let program = p.parse_program().unwrap_or_else(|e| {
-        report_parse_error(&source, &e);
-        process::exit(1);
-    });
-
-    if show_tree {
-        tree::print_program(&program);
-        return;
-    }
-
-    // Interpret
-    let mut interp = Interpreter::new();
-    if let Err(e) = interp.run(&program) {
-        eprintln!("{}: {}", red("error"), e);
-        process::exit(1);
     }
 }
