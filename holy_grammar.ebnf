@@ -2,7 +2,6 @@
 --  Holy Language — EBNF Grammar
 -- ============================================================
 
--- PROGRAM
 program     ::= testament* top_decl* statement* "amen"
 
 top_decl    ::= salm
@@ -12,53 +11,34 @@ top_decl    ::= salm
             |   covenant
 
 
--- TESTAMENTS (modules)
--- without "revealing": imports everything
--- with "revealing": imports only the listed symbols (scriptures, salms, covenants, etc.)
 testament   ::= "testament" ident ("revealing" reveal_list)?
 
 reveal_list ::= ident ("," ident)* ("and" ident)?
 
 
--- SCRIPTURES (struct definition — pure data, no behaviour)
--- may declare type parameters: "scripture Pair of T, E"
 scripture   ::= "scripture" ident ("of" type_param_list)? INDENT field+ DEDENT
 
 field       ::= ident "of" type
 
-
--- SINS (throwable and catchable structures)
--- field* because a sin with no fields is valid — the type alone is enough for catching
 sin_decl    ::= "sin" ident (INDENT field+ DEDENT)?
 
 
--- COVENANTS (sum types — variants may be unit or carry named fields)
--- may declare type parameters: "covenant Option of T"
 covenant    ::= "covenant" ident ("of" type_param_list)? INDENT variant+ DEDENT
 
--- a variant with an indented field block carries data; without one it is a unit variant
 variant     ::= ident (INDENT field+ DEDENT)?
 
--- one or more type parameter names (abstract — resolved at instantiation)
 type_param_list ::= ident ("," ident)* ("and" ident)?
 
-
--- SALMS (regular function definition)
--- may declare type parameters: "salm wrap of T receiving ..."
 salm        ::= "salm" ident ("of" type_param_list)? ("receiving" param_list)? "reveals" type block
 
--- SALMS BOUND TO SCRIPTURES
--- "upon" signals binding — "its" is available inside the body as a reference to the instance
 method_salm ::= "salm" ident "upon" ident ("of" type_param_list)? ("receiving" param_list)? "reveals" type block
 
 param_list  ::= param ("," param)* ("and" param)?
 param       ::= ident "of" type
 
--- block delimited by indentation (INDENT/DEDENT emitted by the lexer)
 block       ::= INDENT statement+ DEDENT
 
 
--- STATEMENTS
 statement   ::= decl
             |   assign
             |   invocation
@@ -70,68 +50,41 @@ statement   ::= decl
             |   discern
             |   transgress
 
--- declaration without a value (zero-initialised to the type's default)
 decl        ::= "let there be" ident "of" type
--- declaration with a value
             |   "let there" ident "of" type "be" expr
 
--- reassignment
 assign      ::= ident "become" expr
 
--- invocation as a statement
 invocation  ::= "hail" ident "upon" expr ("praying" arg_list "thus"?)?         -- method_salm
             |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm
 
--- return value from a salm
 reveal_stmt ::= "reveal" expr
 
--- throw a sin
 transgress  ::= "transgress" ident ("praying" arg_list)?
                 -- ident is the sin type; args are the fields in declaration order
 
--- loop control
--- "forsake" breaks out of the litany (break)
--- "ascend"  skips to the next iteration (continue)
+
 loop_control ::= "forsake"
              |   "ascend"
 
 
--- CONDITIONAL
 conditional ::= "whether" expr block
                ("otherwise so" expr block)*
                ("otherwise" block)?
 
 
--- LOOP
 loop        ::= "litany for" expr block
 
 
--- SINS (exceptions)
--- each "answer for" clause catches a distinct sin type
--- "as ident" is optional — only needed when the sin's fields must be accessed
--- "absolve" is equivalent to finally: always runs, with or without an error
 sin_handler ::= "confess" block
                 ("answer for" ident ("as" ident)? block)+
                 ("absolve" block)?
 
 
--- DISCERN (pattern matching on a covenant variant)
--- "bearing" binds the variant's fields positionally to local names
--- "otherwise" is the default case — optional if all variants are covered
 discern     ::= "discern" ident INDENT
                 ("as" ident ("bearing" ident ("," ident)* ("and" ident)?)? block)+
                 ("otherwise" block)?
                 DEDENT
-
-
--- EXPRESSIONS (precedence from lowest to highest)
---
---   cmp_expr  →  arith_expr  →  term  →  unary  →  atom
---
---   comparison < addition/subtraction < multiplication/division/remainder < negation < atoms
---
---   comparisons do not chain: (a > b > c) is invalid
---   use "after expr thus" to override evaluation order explicitly
 
 expr        ::= cmp_expr
 
@@ -141,7 +94,6 @@ arith_expr  ::= term (("plus" | "minus") term)*
 
 term        ::= unary (("times" | "over" | "remainder") unary)*
 
--- unary negation — "negate x" is equivalent to -x
 unary       ::= "negate" atom | atom
 
 atom        ::= "after" expr "thus"?                                             -- explicit grouping: (expr); thus optional
@@ -162,15 +114,9 @@ cmp_op      ::= "is"
             |   "no greater than"
             |   "no lesser than"
 
--- comma-separated list with optional final "and"
--- "thus" after the last arg closes this call and returns to the enclosing arg_list
 arg_list    ::= expr ("," expr)* ("and" expr)?
 
 
--- TYPES
--- "thus" closes a generic type arg when the next token would be ambiguous
--- example: Stack of Node of T thus   →   Stack<Node<T>>
--- example: verdict of Stack of T thus and word  →  verdict<Stack<T>, word>
 type        ::= "atom"                                -- int (i64)
             |   "fractional"                          -- float (f64)
             |   "word"                                -- string
@@ -180,8 +126,6 @@ type        ::= "atom"                                -- int (i64)
             |   "verdict" "of" type ("," | "and") type -- built-in Result: righteous | condemned
             |   ident ("of" type_arg_list)?           -- user-defined scripture or covenant, optionally generic
 
--- comma-separated concrete type arguments, with optional final "and"
--- each nested type arg may still use "thus" for disambiguation
 type_arg_list ::= type_arg ("," type_arg)* ("and" type_arg)?
 type_arg      ::= type "thus"?
                 -- "thus" is required when the type is itself generic and the
@@ -190,7 +134,6 @@ type_arg      ::= type "thus"?
                 --          └─ thus closes "Node of T", not "Stack of ..."
 
 
--- LITERALS
 literal     ::= int_lit
             |   float_lit
             |   str_lit
