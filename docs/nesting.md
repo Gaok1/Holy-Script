@@ -7,7 +7,7 @@ In Holy lists, the final separator may be written as `and`: `a and b`, `a, b and
 The two tools for disambiguation are:
 
 - `thus`: closes one open inner context
-- `after … thus`: groups an expression explicitly
+- `after`: enters full expression parsing, deepening precedence; `thus` may optionally close it early
 
 This page focuses on one question:
 
@@ -41,7 +41,7 @@ This is read as:
 2 plus (3 times 4)
 ```
 
-If you want the parser to read a different grouping, open a grouped sub-expression with `after` and close it with `thus`:
+If you want the parser to read a different grouping, use `after` to enter full expression parsing from that point:
 
 ```holy
 let there x of atom be after 2 plus 3 thus times 4
@@ -53,21 +53,33 @@ This is read as:
 (2 plus 3) times 4
 ```
 
-So `after … thus` is the disambiguation tool for expression grouping.
+Here `thus` is needed to close the `after` group early, so that `times 4` belongs to the outer expression. Without `thus`, the `after` would consume `2 plus 3 times 4` all at once, following normal precedence.
 
-Another example:
+Another example — when the `after` group is at the end, `thus` is not needed:
 
 ```holy
-let there y of atom be 5 plus after 10 minus 3 thus times 2
+let there y of atom be 5 plus after 10 minus 3
 ```
 
 This is read as:
 
 ```holy
-5 plus ((10 minus 3) times 2)
+5 plus (10 minus 3)
 ```
 
-Without `after … thus`, the parser would not treat `10 minus 3` as one protected inner expression.
+And for a deeper nesting, no `thus` is needed at all:
+
+```holy
+let there z of atom be a times after a plus b times after a minus b
+```
+
+This is read as:
+
+```holy
+a times (a plus (b times (a minus b)))
+```
+
+Each `after` deepens precedence naturally; they close when the expression ends.
 
 ---
 
@@ -277,23 +289,28 @@ They solve different ambiguities in the same line.
 Sometimes you need both expression grouping and call disambiguation.
 
 ```holy
-hail sum3 praying 1, hail double praying after 3 plus 4 thus thus and 9
+hail sum3 praying 1, hail double praying after 3 plus 4 thus and 9
 ```
 
-Read the `thus` tokens in order:
+Read the tokens in order:
 
-1. the first `thus` closes `after 3 plus 4`
-2. the second `thus` closes `hail double praying ...`
+1. `after 3 plus 4` — the group closes naturally at `thus`
+2. `thus` closes `hail double praying ...`
 3. `and 9` now belongs to the outer `hail sum3 ...`
 
 So this is read as:
 
 ```holy
-sum3(1, double((3 plus 4)), 9)
+sum3(1, double(3 plus 4), 9)
 ```
 
-Without the first `thus`, the grouped expression would stay open.  
-Without the second `thus`, the parser would keep reading as if `and 9` still belonged to `double`.
+The `thus` here closes the inner `hail double` call, not the `after` group — because `after 3 plus 4` already ended at `thus`. If the `after` group were the last argument, no `thus` would be needed at all:
+
+```holy
+hail double praying after 3 plus 4
+```
+
+This is read as `double(3 + 4)` — `after` closes naturally at end of argument.
 
 ---
 
@@ -335,14 +352,14 @@ Wrong:
 2 plus 3 thus times 4
 ```
 
-Correct:
+Correct (with explicit close):
 
 ```holy
 after 2 plus 3 thus times 4
 ```
 
-`thus` does not open a context.  
-It only closes one that was opened by `after`, `praying`, or a nested generic `of`.
+`thus` closes the `after` group early so `times 4` runs at the outer level.  
+`thus` does not open a context — it only closes one opened by `after`, `praying`, or a nested generic `of`.
 
 ---
 
@@ -350,7 +367,7 @@ It only closes one that was opened by `after`, `praying`, or a nested generic `o
 
 The parser opens contexts like this:
 
-- `after` opens a grouped expression
+- `after` deepens into full expression parsing (highest precedence reset)
 - `praying` opens a call argument list
 - `of` may open a nested generic type
 
@@ -358,18 +375,27 @@ Then:
 
 - each `thus` closes one currently open context
 
+`after` is special: its context closes naturally when the expression ends. `thus` only needs to close it when the outer expression must continue after the group.
+
 So when you see:
 
 ```holy
-hail outer praying hail inner praying after 1 plus 2 thus thus and 9
+hail outer praying hail inner praying after 1 plus 2 thus and 9
 ```
 
 read it as:
 
-1. open grouping with `after`
-2. first `thus` closes the grouped expression
-3. second `thus` closes `inner(...)`
-4. `and 9` resumes the outer `outer(...)` call
+1. `after 1 plus 2` — expression ends at `thus`
+2. `thus` closes `inner(...)`
+3. `and 9` resumes the outer `outer(...)` call
+
+And when the `after` group is last, you can drop `thus` entirely:
+
+```holy
+hail outer praying hail inner praying after 1 plus 2
+```
+
+reads as `outer(inner(1 + 2))`.
 
 ---
 

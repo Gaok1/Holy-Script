@@ -507,12 +507,12 @@
         "description": "Fecha o contexto aberto mais recente (type arg, arg list ou after)"
     },
 
-    "after … thus (agrupamento)": {
+    "after (agrupamento)": {
         "prefix": "after",
         "body": [
-            "after ${1:expr} thus"
+            "after ${1:expr}"
         ],
-        "description": "Agrupa uma sub-expressão (equivalente a parênteses)"
+        "description": "Aprofunda o parser para expressão completa; adicione 'thus' após se a expressão externa continuar"
     },
 
     "hail word_of": {

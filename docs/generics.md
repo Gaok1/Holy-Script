@@ -140,13 +140,14 @@ hail a praying hail b praying hail c praying 1 thus thus and 2
 
 Sem `thus`, `and 1` seria parseado como segundo argumento de `double`.
 
-### 4. Agrupamento de expressões — `after … thus`
+### 4. Agrupamento de expressões — `after`
 
-`after` abre um sub-grupo e `thus` o fecha, equivalente a parênteses:
+`after` aprofunda o parser para o nível de expressão completa. O `thus` é **opcional**: fecha o grupo cedo quando a expressão externa precisa continuar após ele.
 
 ```holy
-after 3 times 5 thus           -- (3 * 5) = 15
-5 plus after 3 times 2 thus    -- 5 + (3 * 2) = 11
+after 3 times 5              -- (3 * 5) = 15  (sem thus)
+5 plus after 3 times 2       -- 5 + (3 * 2) = 11  (sem thus)
+after a plus b thus times c  -- (a + b) * c  (thus necessário aqui)
 ```
 
 Veja [Aninhamento](nesting.md) para todos os casos de desambiguação.
@@ -161,7 +162,7 @@ Cada `thus` fecha exatamente **um** contexto aberto. Contextos possíveis:
 |------------|-------------|
 | `of` em argumento de tipo genérico | `thus` dentro da análise de tipo |
 | `praying` em uma chamada | `thus` após a lista de argumentos |
-| `after` | `thus` que segue a expressão |
+| `after` | `thus` opcional — fecha o grupo cedo se presente |
 
 Um `thus` sem contexto aberto correspondente é erro de sintaxe.
 

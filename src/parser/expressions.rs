@@ -153,18 +153,9 @@ impl Parser {
             Token::After => {
                 self.advance();
                 let inner = self.parse_expr()?;
-                let thus_sp = self.sp().clone();
-                if self.peek() != &Token::Thus {
-                    return Err(ParseError::at(
-                        format!(
-                            "the 'after' grouping must be sealed with 'thus', yet '{}' was spoken",
-                            token_name(self.peek())
-                        ),
-                        thus_sp.line,
-                        thus_sp.col,
-                    ));
+                if self.peek() == &Token::Thus {
+                    self.advance();
                 }
-                self.advance();
                 Ok(inner)
             }
             Token::Hail => {

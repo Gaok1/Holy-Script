@@ -125,8 +125,9 @@ a no greater than b   a no lesser than b
 
 ### Expression grouping
 ```holy
-after 3 times 5 thus        -- (3 * 5) = 15
-5 plus after 3 times 2 thus -- 5 + (3 * 2) = 11
+after 3 times 5             -- (3 * 5) = 15
+5 plus after 3 times 2      -- 5 + (3 * 2) = 11
+after a plus b thus times c -- (a + b) * c  (thus closes early so times c runs outside)
 ```
 
 ### Functions

@@ -108,13 +108,14 @@ let there x of atom be 2 plus 3 times 4
 
 ---
 
-## Agrupamento — `after … thus`
+## Agrupamento — `after`
 
-`after` abre um sub-grupo; `thus` o fecha. Equivale a parênteses:
+`after` aprofunda o parser para o nível de expressão completa, equivalente a abrir parênteses. O `thus` é **opcional**: só é necessário quando a expressão externa deve continuar após o grupo.
 
 ```holy
-after 2 plus 3 thus times 4          -- (2 + 3) * 4 = 20
-5 plus after 10 minus 3 thus times 2  -- 5 + ((10 - 3) * 2) = 19
+after 2 plus 3 thus times 4   -- (2 + 3) * 4 = 20  (thus fecha o grupo cedo)
+5 plus after 10 minus 3       -- 5 + (10 - 3) = 12  (sem thus, fecha naturalmente)
+a times after a plus b        -- a * (a + b)         (sem thus)
 ```
 
 Veja mais casos em [Aninhamento](nesting.md).
