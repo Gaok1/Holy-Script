@@ -205,11 +205,13 @@ impl Interpreter {
     fn load_testament(&mut self, testament: &Testament) -> Result<(), HolyError> {
         use self::builtins::builtin_sin;
 
-        // Build the canonical module key: "pasta1/pasta2/name" (or just "name")
+        // Build the canonical module key using reversed segments (outermost first).
+        // `from shapes from examples` → key "examples/shapes/circle"
         let module_key = if testament.path.is_empty() {
             testament.name.clone()
         } else {
-            format!("{}/{}", testament.path.join("/"), testament.name)
+            let outer_first: Vec<&String> = testament.path.iter().rev().collect();
+            format!("{}/{}", outer_first.iter().map(|s| s.as_str()).collect::<Vec<_>>().join("/"), testament.name)
         };
 
         if self.loaded_modules.contains(&module_key) {
@@ -257,9 +259,10 @@ impl Interpreter {
     fn resolve_testament_source(&self, testament: &Testament) -> Result<String, String> {
         let dir = self.source_dir.clone().unwrap_or_else(|| PathBuf::from("."));
 
-        // Build filesystem path: {source_dir}/{path segments...}/{name}.holy
+        // Build filesystem path: segments are listed innermost-first, so reverse them.
+        // `testament circle from shapes from examples` → examples/shapes/circle.holy
         let mut file_path = dir;
-        for segment in &testament.path {
+        for segment in testament.path.iter().rev() {
             file_path = file_path.join(segment);
         }
         file_path = file_path.join(format!("{}.holy", testament.name));

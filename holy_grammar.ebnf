@@ -1,7 +1,3 @@
--- ============================================================
---  Holy Language — EBNF Grammar
--- ============================================================
-
 program     ::= testament* top_decl* statement* "amen"
 
 top_decl    ::= salm
@@ -10,41 +6,21 @@ top_decl    ::= salm
             |   sin_decl
             |   covenant
 
-
--- TESTAMENTS (modules)
--- without "revealing": imports everything
--- with "revealing": imports only the listed symbols (scriptures, salms, covenants, etc.)
--- "from" clauses navigate subdirectories: "testament utils from helpers from math"
---   resolves to helpers/math/utils.holy relative to the current file.
--- If no file is found and no "from" is given, the interpreter checks the
---   built-in standard library (e.g. "testament arithmos" loads the math stdlib).
 testament   ::= "testament" ident ("from" ident)* ("revealing" reveal_list)?
-
 reveal_list ::= ident ("," ident)* ("and" ident)?
 
-
-scripture   ::= "scripture" ident ("of" type_param_list)? INDENT field+ DEDENT
-
-field       ::= ident "of" type
-
-sin_decl    ::= "sin" ident (INDENT field+ DEDENT)?
-
-
-covenant    ::= "covenant" ident ("of" type_param_list)? INDENT variant+ DEDENT
-
-variant     ::= ident (INDENT field+ DEDENT)?
-
+scripture       ::= "scripture" ident ("of" type_param_list)? INDENT field+ DEDENT
+field           ::= ident "of" type
+sin_decl        ::= "sin" ident (INDENT field+ DEDENT)?
+covenant        ::= "covenant" ident ("of" type_param_list)? INDENT variant+ DEDENT
+variant         ::= ident (INDENT field+ DEDENT)?
 type_param_list ::= ident ("," ident)* ("and" ident)?
 
 salm        ::= "salm" ident ("of" type_param_list)? ("receiving" param_list)? "reveals" type block
-
 method_salm ::= "salm" ident "upon" ident ("of" type_param_list)? ("receiving" param_list)? "reveals" type block
-
 param_list  ::= param ("," param)* ("and" param)?
 param       ::= ident "of" type
-
 block       ::= INDENT statement+ DEDENT
-
 
 statement   ::= decl
             |   assign
@@ -58,40 +34,28 @@ statement   ::= decl
             |   transgress
 
 decl        ::= "let there be" ident "of" type
--- untyped declaration: type is inferred and locked on the first "become" assignment
             |   "let there be" ident
--- declaration with an explicit type and initial value
             |   "let there" ident "of" type "be" expr
--- declaration with inferred type: type is deduced from the expression and locked immediately
             |   "let there" ident "be" expr
 
 assign      ::= ident "become" expr
 
-invocation  ::= "hail" ident "upon" expr ("praying" arg_list "thus"?)?         -- method_salm
-            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm
+invocation  ::= "hail" ident "upon" expr ("praying" arg_list "thus"?)?
+            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)?
 
 reveal_stmt ::= "reveal" expr
-
 transgress  ::= "transgress" ident ("praying" arg_list)?
-                -- ident is the sin type; args are the fields in declaration order
-
-
-loop_control ::= "forsake"
-             |   "ascend"
-
+loop_control ::= "forsake" | "ascend"
 
 conditional ::= "whether" expr block
-               ("otherwise so" expr block)*
-               ("otherwise" block)?
-
+                ("otherwise so" expr block)*
+                ("otherwise" block)?
 
 loop        ::= "litany for" expr block
-
 
 sin_handler ::= "confess" block
                 ("answer for" ident ("as" ident)? block)+
                 ("absolve" block)?
-
 
 discern     ::= "discern" ident INDENT
                 ("as" ident ("bearing" ident ("," ident)* ("and" ident)?)? block)+
@@ -99,181 +63,37 @@ discern     ::= "discern" ident INDENT
                 DEDENT
 
 expr        ::= cmp_expr
-
 cmp_expr    ::= arith_expr (cmp_op arith_expr)?
-
 arith_expr  ::= term (("plus" | "minus") term)*
-
 term        ::= unary (("times" | "over" | "remainder") unary)*
-
 unary       ::= "negate" atom | atom
 
-atom        ::= "after" expr "thus"?                                             -- explicit grouping: (expr); thus optional
-            |   "hail" ident "upon" expr ("praying" arg_list "thus"?)?           -- method_salm call
-            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- regular or generic salm call
-            |   "manifest" ident "of" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)? -- data variant: manifest some of Option of atom praying 42
-            |   "manifest" ident ("praying" arg_list "thus"?)?                   -- scripture instantiation
-            |   ident "of" ident ("of" type_arg_list)?                           -- unit variant: none of Option of atom
-            |   ident "from" ident                                               -- field access on a variable
-            |   ident "from" "its"                                               -- field access inside method_salm
+atom        ::= "after" expr "thus"?
+            |   "hail" ident "upon" expr ("praying" arg_list "thus"?)?
+            |   "hail" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)?
+            |   "manifest" ident "of" ident ("of" type_arg_list)? ("praying" arg_list "thus"?)?
+            |   "manifest" ident ("praying" arg_list "thus"?)?
+            |   ident "of" ident ("of" type_arg_list)?
+            |   ident "from" ident
+            |   ident "from" "its"
             |   literal
-            |   ident                                                            -- variable
+            |   ident
 
-cmp_op      ::= "is"
-            |   "is not"
-            |   "greater than"
-            |   "lesser than"
-            |   "no greater than"
-            |   "no lesser than"
+cmp_op      ::= "is" | "is not"
+            |   "greater than" | "lesser than"
+            |   "no greater than" | "no lesser than"
 
-arg_list    ::= expr ("," expr)* ("and" expr)?
-
-
-type        ::= "atom"                                -- int (i64)
-            |   "fractional"                          -- float (f64)
-            |   "word"                                -- string
-            |   "dogma"                               -- bool (blessed | forsaken)
-            |   "void"
-            |   "grace" "of" type                    -- built-in Option: granted | absent
-            |   "verdict" "of" type ("," | "and") type -- built-in Result: righteous | condemned
-            |   ident ("of" type_arg_list)?           -- user-defined scripture or covenant, optionally generic
-
+arg_list      ::= expr ("," expr)* ("and" expr)?
 type_arg_list ::= type_arg ("," type_arg)* ("and" type_arg)?
 type_arg      ::= type "thus"?
-                -- "thus" is required when the type is itself generic and the
-                -- next token would otherwise be consumed as another type arg
-                -- example: Stack of Node of T thus, word
-                --          └─ thus closes "Node of T", not "Stack of ..."
 
+type        ::= "atom" | "fractional" | "word" | "dogma" | "void"
+            |   "grace" "of" type
+            |   "verdict" "of" type ("," | "and") type
+            |   ident ("of" type_arg_list)?
 
-literal     ::= int_lit
-            |   float_lit
-            |   str_lit
-            |   "blessed"
-            |   "forsaken"
-
+literal     ::= int_lit | float_lit | str_lit | "blessed" | "forsaken"
 int_lit     ::= "-"? [0-9]+
 float_lit   ::= "-"? [0-9]+ "." [0-9]+
 str_lit     ::= '"' [^"]* '"'
 ident       ::= [a-zA-Z_][a-zA-Z0-9_]*
-
-
--- ============================================================
---  "thus" — UNIFIED CLOSING MARKER
--- ============================================================
--- "thus" serves as a stack-pop signal in three contexts:
---
---   1. TYPE ARG    — closes a nested generic type, returns to the enclosing type
---                    Stack of Node of T thus
---
---   2. ARG LIST    — closes the arg_list of the current hail/manifest call,
---                    returns to the enclosing arg_list
---                    hail a praying hail b praying 1 thus and 2
---                    → a(b(1), 2)
---
---   3. GROUPING    — "after expr" enters full expression parsing from that point
---                    "thus" is optional: closes the group early so the outer
---                    expression can continue after the group
---                    after 3 times 5              →   (3 * 5)  (no thus needed)
---                    after a plus b thus times c  →   (a+b)*c  (thus closes early)
---
--- The parser maintains a context stack. Each "thus" pops exactly one level.
--- Unbalanced "thus" (more closes than opens) is a syntax error.
-
-
--- ============================================================
---  RESERVED WORDS
--- ============================================================
--- testament  revealing  scripture  sin  covenant  salm  upon  receiving  reveals
--- let  there  be  of  become  hail  praying  reveal  whether  otherwise  so
--- litany  for  forsake  ascend  bearing  confess  answer  absolve  as  transgress
--- manifest  from  its  amen  discern  negate  remainder  after  thus
--- plus  minus  times  over  is  not  greater  lesser  than  no
--- blessed  forsaken  and  void  atom  fractional  word  dogma
--- grace  granted  absent  verdict  righteous  condemned
-
-
--- ============================================================
---  BUILT-IN SALMS
--- ============================================================
--- All built-in salms are dispatched at runtime, not at parse time.
--- They behave exactly like user-defined salms.
-
--- I/O
--- proclaim   receiving val of word              reveals void
--- herald     receiving val of word              reveals void
--- inquire                                       reveals word
--- read_file  receiving path of word             reveals verdict of word and word
--- write_file receiving path of word and content of word  reveals verdict of dogma and word
--- args                                          reveals legion of word
--- exit       receiving code of atom             reveals void
-
--- Type conversion
--- atom_of       receiving val of word           reveals atom          -- returns 0 on failure
--- parse_atom    receiving val of word           reveals verdict of atom and word
--- fractional_of receiving val of any            reveals fractional
--- word_of       receiving val of any            reveals word
-
--- Math
--- abs    receiving val of atom/fractional       reveals atom/fractional
--- floor  receiving val of fractional            reveals atom
--- ceil   receiving val of fractional            reveals atom
--- round  receiving val of fractional            reveals atom
--- min    receiving a and b                      reveals atom/fractional
--- max    receiving a and b                      reveals atom/fractional
--- pow    receiving base and exp                 reveals atom/fractional
-
--- Collections
--- legion  receiving values...                   reveals legion of T
-
--- Built-in methods on word (runtime-dispatched via "hail method upon target"):
---   length    → atom          is_empty   → dogma
---   at        → word          slice      → word
---   contains  → dogma         starts_with → dogma     ends_with → dogma
---   index_of  → grace of atom to_upper   → word       to_lower  → word
---   trim      → word          replace    → word        split     → legion of word
-
--- Built-in methods on legion of T:
---   length    → atom          is_empty  → dogma
---   at        → T             first     → grace of T   last    → grace of T
---   contains  → dogma         index_of  → grace of atom
---   push      → legion of T   slice     → legion of T
---   concat    → legion of T   reverse   → legion of T
-
-
--- ============================================================
---  BUILT-IN TYPES AND COVENANTS
--- ============================================================
---
--- legion of T
---   a typed collection value.
---   examples:
---     let there xs of legion of atom be hail legion praying 1, 2 and 3
---     let there first of atom be hail at upon xs praying 0
---     xs become hail push upon xs praying 4
---
--- grace of T
---   a value that may or may not exist.
---   granted — the value was conceded; carries the inner value
---   absent  — nothing was given; unit variant, no fields
---
---   example:
---     let there g of grace of atom be manifest granted of grace of atom praying 42
---     discern g
---         as granted bearing value
---             hail proclaim praying word_of praying value
---         as absent
---             hail proclaim praying "nothing"
---
--- verdict of T, E
---   the outcome of an operation that may fail.
---   righteous — the operation succeeded; carries the result value
---   condemned — the operation failed; carries the reason
---
---   example:
---     let there r of verdict of atom, word be hail divide praying 10 and 0
---     discern r
---         as righteous bearing value
---             hail proclaim praying word_of praying value
---         as condemned bearing reason
---             hail proclaim praying reason

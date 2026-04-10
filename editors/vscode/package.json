@@ -2,7 +2,7 @@
     "name": "holy-script",
     "displayName": "Holy Script",
     "description": "Syntax highlighting, snippets, file icons and run support for Holy Script",
-    "version": "0.2.1",
+    "version": "0.2.2",
     "publisher": "Gaok1",
     "icon": "icon.png",
     "license": "MIT",
